@@ -1,0 +1,68 @@
+body {
+	font-family: 'Lucida Grande', Verdana, sans-serif;
+	font-size: 12px;
+	line-height: 1.4em;
+	background-color: #ddd;
+}
+
+div#container {
+	width: 600px;
+	background-color: white;
+	margin: 0 auto;
+	padding: 24px 12px 12px;
+}
+
+a {
+	text-decoration: none;
+	color: #a16e0b;
+	font-weight: bold;
+}
+
+h1 {
+	font-size: 36px;
+}
+
+h2 {
+	font-size: 20px;
+	margin: 8px 0 12px;
+	padding-top: 8px;
+}
+
+p.intro {
+	font-size: 15px;
+	margin-bottom: 24px;
+	color: #888;
+}
+
+ul#menu {
+	margin: 12px 0 24px;
+}
+
+ul#menu li {
+	display: inline;
+	margin-right: 9px;
+	font-size: 11px;
+}
+
+dt {
+	border-top: 1px solid #ddd;
+	padding-top: 4px;
+}
+
+.metadata {
+	font-size: 11px;
+	color: #ccc;
+}
+
+dd {
+	margin-bottom: 6px;
+}
+
+ul.news li {
+	border-top: 1px solid #ddd;
+	padding-bottom: 12px;
+}
+
+div.newsText {
+	margin-top: 16px;
+}

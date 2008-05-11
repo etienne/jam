@@ -1,0 +1,27 @@
+Options +Indexes
+
+# MultiByte stuff
+php_value mbstring.language "Neutral"
+php_value mbstring.internal_encoding "UTF-8"
+php_value mbstring.encoding_translation "On"
+php_value mbstring.http_input "auto"
+php_value mbstring.detect_order "ASCII,UTF-8,JIS,SJIS,EUC-JP"
+
+# File Uploads
+php_value upload_max_filesize "21M"
+php_value post_max_size "24M"
+
+# Path Handling
+RewriteEngine on
+
+# Requests for assets/ try app/assets/ and engine/assets/ (in that order)
+# Change this line to match your setup:
+RewriteCond %{DOCUMENT_ROOT}/jag/app/assets/$1 -f
+RewriteRule ^assets/(.*)$ app/assets/$1 [L]
+# Also change this line:
+RewriteCond %{DOCUMENT_ROOT}/jag/engine/assets/$1 -f
+RewriteRule ^assets/(.*)$ engine/assets/$1 [L]
+
+# Any other request is handled by bootstrap script
+RewriteCond %{ENV:REDIRECT_STATUS} !200
+RewriteRule ^.*$ bootstrap.php

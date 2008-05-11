@@ -1,0 +1,305 @@
+body, div, form, table, tr, th, td, dl, dt, dd, p, ul, ol, li, h1, h2, h3, h4, h5, h6 {
+	margin: 0;
+	padding: 0;
+	font-size: 11px;
+	line-height: 20px;
+	font-weight: normal;
+	color: black;
+	list-style: none;
+	border: 0;
+}
+
+div.clear {
+	clear: both;
+	height: 0;
+}
+
+body {
+	background-color: white;
+	font-family: "Lucida Grande", Arial, sans-serif;
+	margin-bottom: 60px;
+}
+
+a {
+	color: black;
+	text-decoration: none;
+	border-bottom: 1px solid #ddd;
+}
+
+a:hover {
+	color: #dc3e13;
+	border-bottom: 1px solid #dc3e13;
+}
+
+strong {
+	font-weight: bold;
+}
+
+dl {
+	font-size: 90%;
+}
+
+dt {
+	font-weight: bold;
+}
+
+dd {
+	margin: 0 0 1em 0;
+	padding: 0;
+}
+
+div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUpload {
+	background-color: #fdf563;
+	padding: 8px 16px;
+	width: 538px;
+	margin-bottom: 12px;
+}
+
+p.errorInvalid {
+	background-color: #ddd;
+}
+
+div.confirm p {
+}
+
+div.confirm form {
+	margin: 8px 0 5px;
+	text-align: right;
+}
+
+div.confirm input.submit {
+	margin: 0 0 0 12px;
+}
+
+/* Titles
+   --------------------------------------------------
+*/
+
+h1 {
+	font-size: 11px;
+	background-color: #333;
+	color: white;
+	padding: 3px 16px;
+	font-weight: bold;
+}
+
+h2 {
+	font-weight: bold;
+}
+
+/* Logout button
+   --------------------------------------------------
+*/
+
+a#logout {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	display: block;
+	width: 18px;
+	height: 18px;
+	background: url("adminDisconnect.png") no-repeat;
+	text-indent: -9999px;
+	border: 0;
+}
+
+/* Menu
+   --------------------------------------------------
+*/
+
+ul#menu {
+	float: left;
+	width: 160px;
+}
+
+ul#menu li {
+}
+
+ul#menu a {
+	display: block;
+	padding: 5px 16px;
+	border-bottom: 1px solid #ddd;
+}
+
+ul#menu a:hover {
+	background-color: #dc3e13;
+	color: white;
+}
+
+/* Body
+   --------------------------------------------------
+*/
+
+div#body {
+	margin: 16px 0 0 190px;
+}
+
+p.addItem {
+	font-size: 125%;
+}
+
+a.button {
+	display: block;
+	width: 128px;
+	margin: 16px 0;
+	padding: 5px 16px;
+	border: 1px solid #ddd;
+}
+
+a.button:hover {
+	background-color: #dc3e13;
+	color: white;
+}
+
+/* Item actions
+   --------------------------------------------------
+*/
+
+ul.actions {
+	width: 570px;
+	margin: 20px 0 32px;
+	text-align: right;
+}
+
+ul.actions li {
+	display: inline;
+}
+
+ul.actions a {
+	margin-left: 4px;
+	padding: 8px 16px;
+	border: 1px solid #ddd;
+}
+
+ul.actions li a + li a {
+	background-color: gray;
+}
+
+ul.actions a:hover {
+	background-color: #dc3e13;
+	color: white;
+}
+
+/* Lists
+   --------------------------------------------------
+*/
+
+ul.items {
+	margin: 6px 0 20px;
+	width: 380px;
+}
+
+ul.items li {
+	list-style: none;
+}
+
+ul.items li a {
+	display: block;
+	padding: 3px 16px;
+	border-bottom: 1px solid #ddd;
+}
+
+ul.items li a:hover {
+	background-color: #dc3e13;
+	color: white;
+}
+
+/* Image lists
+   --------------------------------------------------
+*/
+
+ul.images li {
+	display: inline;
+	padding: 0 10px 10px 0;
+}
+
+ul.images a img {
+	border: 3px solid;
+}
+
+/* Tables
+   --------------------------------------------------
+*/
+
+p.itemCount {
+	font-size: 90%;
+	color: #acacb6;
+	margin: 6px 0;
+	padding: 0;
+}
+
+table {
+	border-spacing: 0;
+}
+
+tr {
+}
+
+th, td {
+}
+
+th {
+}
+
+/* Forms
+   --------------------------------------------------
+*/
+
+div.actions {
+	width: 570px;
+	margin-bottom: 16px;
+	text-align: right;
+}
+
+form > div {
+	width: 570px;
+	padding: 5px 0;
+	border-bottom: 1px solid #ddd;
+}
+
+form div.missing {
+	color: #dc3e13;
+}
+
+form div.invalid {
+	color: #ddd;
+}
+
+form label {
+	display: block;
+	font-weight: bold;	
+	float: left;
+	width: 160px;
+	margin-right: 30px;
+	height: 20px;
+	overflow: hidden;
+}
+
+form div div {
+	padding-left: 190px;
+}
+
+form div div p {
+	margin-bottom: 3px;
+	color: #999;
+}
+
+form div div p img {
+	position: relative;
+	top: 2px;
+	margin-right: 3px;
+}
+
+form textarea {
+	width: 376px;
+}
+
+form input.submit {
+	font-size: 16px;
+	margin: 8px 0 0 190px;
+}
+
+form fieldset {
+	padding: 0;
+	border: 0;
+}
