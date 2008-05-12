@@ -303,3 +303,7 @@ form fieldset {
 	padding: 0;
 	border: 0;
 }
+
+form span.disabled {
+	color: #ddd;
+}

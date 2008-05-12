@@ -156,7 +156,7 @@ class Form {
 	function AddPopup($name, $array, $title = '', $forbid = '') {
 		$this->AddSelect($name, $array, $title, false, $forbid);
 	}
-
+	
 	function AddMultipleSelect($name, $array, $title = '', $forbid = '') {
 		$this->AddSelect($name, $array, $title, true, $forbid);
 	}
@@ -217,6 +217,10 @@ class Form {
 		return true;
 	}
 
+	function AddDisabled($name, $note, $title = '') {
+		$this->AddItem($name, $note, $title);
+	}
+	
 	function AddHidden($name, $value = false) {
 		if (!$value) {
 			$value = $this->values[$name];

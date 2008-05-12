@@ -597,11 +597,16 @@ class Module {
 				case 'signedint':
 				case 'multi':
 					// Display appropriate related data if available, else display a plain field
-					if ($relatedData = $this->GetRelatedArray($name)) {
-						if ($info['type'] == 'multi') {
-							$form->AddMultipleSelect($name, $relatedData, $title);
+					if ($info['relatedModule'] || $info['relatedArray']) {
+						if ($relatedData = $this->GetRelatedArray($name)) {
+							if ($info['type'] == 'multi') {
+								$form->AddMultipleSelect($name, $relatedData, $title);
+							} else {
+								$form->AddPopup($name, $relatedData, $title);
+							}
 						} else {
-							$form->AddPopup($name, $relatedData, $title);
+							$note = e('span', array('class' => 'disabled'), $_JAG['strings']['admin']['na']);
+							$form->AddDisabled($name, $note, $title);
 						}
 					} else {
 						$form->AddField($name, 5, $title);
