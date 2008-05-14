@@ -622,15 +622,15 @@ class Module {
 					break;
 				case 'file':
 					if ($form->values[$name]) {
+						$form->AddHidden($name .'_id', $this->item[$name]->itemID);
 						// A file has already been uploaded
 						$inputParams = array(
-							'id' => 'keepFile_'. $name,
-							'name' => 'keepFile_'. $name,
+							'id' => 'deleteFile_'. $name,
+							'name' => 'deleteFile_'. $name,
 							'type' => 'checkbox',
-							'value' => 1,
-							'checked' => 'checked'
+							'value' => 1
 						);
-						$checkbox = e('input', $inputParams);
+						$checkbox = e('span', array('class' => 'fileDeleteCheckbox'), e('input', $inputParams) . 'Effacer ce fichier');
 						$fileIcon = i('assets/images/admin_file.png', $_JAG['strings']['admin']['fileIcon']);
 						$filePath = a($this->item[$name]->item['path'], $this->item[$name]->item['filename']);
 						$note = $checkbox . $fileIcon . $filePath;
@@ -715,8 +715,12 @@ class Module {
 					}
 					break;
 				case 'file':
+					// Add data from $_POST manually for files
+					$this->postData[$field] = $_POST[$field .'_id'];
+					
 					// Look for file upload errors
 					$errorCode = $_FILES[$field]['error'];
+					
 					// The 'no file' error should not trigger an error
 					if ($errorCode && $errorCode != UPLOAD_ERR_NO_FILE) {
 						$this->fileUploadError = $errorCode;
@@ -725,8 +729,9 @@ class Module {
 					$file = $this->NestModule('files');
 					
 					// Check whether a file needs to be deleted
-					if ($_POST['keepFile_'. $field] === 0) {
-						$file->DeleteItem($this->postData[$field]);
+					if ($_POST['deleteFile_'. $field]) {
+						$file->DeleteItem($_POST[$field .'_id']);
+						$this->postData[$field] = 0;
 					}
 					
 					// Make sure file was uploaded correctly

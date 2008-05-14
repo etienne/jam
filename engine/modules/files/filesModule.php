@@ -66,11 +66,17 @@ class FilesModule extends Module {
 		} else {
 			$path = $originalFilename;
 		}
-		if (Path::Insert($path, $this->moduleID, $fileID)) {
-			return $fileID;
-		} else {
+		if (!Path::Insert($path, $this->moduleID, $fileID)) {
 			trigger_error("Couldn't insert path for uploaded file", E_USER_ERROR);
 		}
+		
+		// Delete previous item if applicable
+		$previousFileID = $this->parentModule->postData[$field];
+		if (!$this->parentModule->config['keepVersions'] && $previousFileID) {
+			$this->DeleteItem($previousFileID);
+		}
+		
+		return $fileID;
 	}
 
 }

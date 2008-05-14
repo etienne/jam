@@ -307,3 +307,7 @@ form fieldset {
 form span.disabled {
 	color: #ddd;
 }
+
+span.fileDeleteCheckbox {
+	float: right;
+}
