@@ -125,7 +125,7 @@ if (!$tables['users'] || !$tables['_paths']) {
 $_JAG['installedModules'] = Query::SimpleResults('_modules');
 
 // We sync using database time (might differ from PHP time)
-$databaseTimeQuery = new Query(array('fields' => 'UNIX_TIMESTAMP(NOW())'));
+$databaseTimeQuery = new Query(array('fields' => 'NOW()'));
 $databaseTime = $databaseTimeQuery->GetSingleValue();
 $_JAG['databaseTime'] = $databaseTime;
 
