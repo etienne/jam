@@ -14,7 +14,6 @@ class Module {
 	var $name;
 	var $moduleID;
 	var $itemID;
-	var $item;
 	var $config;
 	var $schema;
 
