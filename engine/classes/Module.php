@@ -629,10 +629,22 @@ class Module {
 							'type' => 'checkbox',
 							'value' => 1
 						);
-						$checkbox = e('span', array('class' => 'fileDeleteCheckbox'), e('input', $inputParams) . 'Effacer ce fichier');
-						$fileIcon = i('assets/images/admin_file.png', $_JAG['strings']['admin']['fileIcon']);
-						$filePath = a($this->item[$name]->item['path'], $this->item[$name]->item['filename']);
-						$note = $checkbox . $fileIcon . $filePath;
+						$checkbox = e('span', array('class' => 'fileDeleteCheckbox'), e('input', $inputParams) . $_JAG['strings']['admin']['deleteThisFile']);
+						$filePath = $this->item[$name]->item['path'];
+						switch ($this->item[$name]->item['type']) {
+							case 'image/png':
+							case 'image/jpeg':
+							case 'image/gif':
+								$image = i($filePath .'?context=adminThumbnail', $_JAG['strings']['admin']['thumbnail']);
+								$fileLink = a($filePath, $image, array('class' => 'thumbnail'));
+								break;
+							default:
+								$fileIcon = i('assets/images/admin_file.png', $_JAG['strings']['admin']['fileIcon']);
+								$filePath = a($this->item[$name]->item['path'], $this->item[$name]->item['filename']);
+								$fileLink = $fileIcon . $filePath;
+								break;
+						}
+						$note = $checkbox . $fileLink;
 					} else {
 						// No file has been uploaded yet
 						$note = $_JAG['strings']['admin']['noFile'];

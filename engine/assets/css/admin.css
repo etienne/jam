@@ -1,23 +1,15 @@
-body, div, form, table, tr, th, td, dl, dt, dd, p, ul, ol, li, h1, h2, h3, h4, h5, h6 {
-	margin: 0;
-	padding: 0;
+body {
 	font-size: 11px;
 	line-height: 20px;
-	font-weight: normal;
 	color: black;
-	list-style: none;
-	border: 0;
+	background-color: white;
+	font-family: "Lucida Grande", Arial, sans-serif;
+	margin-bottom: 60px;
 }
 
 div.clear {
 	clear: both;
 	height: 0;
-}
-
-body {
-	background-color: white;
-	font-family: "Lucida Grande", Arial, sans-serif;
-	margin-bottom: 60px;
 }
 
 a {
@@ -310,4 +302,14 @@ form span.disabled {
 
 span.fileDeleteCheckbox {
 	float: right;
+}
+
+a.thumbnail {
+	display: block;
+	border: 1px;
+	margin-bottom: 8px;
+}
+
+a.thumbnail img {
+	display: block;
 }

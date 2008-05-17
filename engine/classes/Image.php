@@ -33,7 +33,7 @@ class Image {
 		}
 	}
 	
-	function OutputResizedImage($width, $height, $quality) {
+	function OutputResizedImage($width, $height) {
 		global $_JAG;
 		
 		// Determine output size
@@ -61,7 +61,7 @@ class Image {
 			// Fixed height, auto width
 			$canvasWidth = $imageWidth = $autoWidth;
 			$canvasHeight = $imageHeight = $height;
-		} elseif (!$width && !$height) {
+		} else {
 			// No dimensions were provided
 			return false;
 		}
@@ -92,7 +92,7 @@ class Image {
 		imageinterlace($outputObject, true);
 
 		// Output image
-		imagejpeg($outputObject, null, $quality);
+		imagejpeg($outputObject, null, 90);
 		return true;
 	}
 	
