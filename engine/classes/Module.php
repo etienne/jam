@@ -806,11 +806,9 @@ class Module {
 			
 			// If no language was given, insert default language
 			if (!$this->postData['language']) {
-				$params['language'] = $_JAG['defaultLanguage'];
+				$insertData['language'] = $_JAG['defaultLanguage'];
 			}
 			
-			// Log IP
-			$params['ip'] = $_SERVER['REMOTE_ADDR'];	
 		}
 		
 		if (!$this->config['keepVersions']) {
