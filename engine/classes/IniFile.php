@@ -11,7 +11,7 @@ class IniFile {
 			$parsedArray = parse_ini_file($iniFile, $parseSections);
 			foreach ($parsedArray as $key => $parsedItem) {
 				if (is_string($parsedItem)) {
-					if (preg_match('/^\[([^\[]+)\]$/', $parsedItem, $matchesArray)) {
+					if (preg_match('/^<([^>]+)>$/', $parsedItem, $matchesArray)) {
 						$parsedArray[$key] = explode(', ', $matchesArray[1]);
 					}
 				}
