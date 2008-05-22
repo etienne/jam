@@ -54,11 +54,9 @@ class Form {
 			$itemDiv = e('div', $item);
 			// Look for missing or invalid items
 			if (in_array($name, $this->missing)) {
-				$attributes = array('class' => 'missing');
-				$string = e('div', $attributes, $label . $itemDiv);
+				$string = e('div', array('class' => 'missing'), $label . $itemDiv);
 			} elseif (in_array($name, $this->invalid)) {
-				$attributes = array('class' => 'invalid');
-				$string = e('div', $attributes, $label . $itemDiv);
+				$string = e('div', array('class' => 'invalid'), $label . $itemDiv);
 			} else {
 				$string = e('div', $label . $itemDiv);
 			}

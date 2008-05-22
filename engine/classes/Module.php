@@ -255,7 +255,7 @@ class Module {
 			$query->AddOrderBy('master DESC');
 		}
 		
-		// Load paths
+		// Load paths if appropriate
 		$query->AddFields(array('path' => '_paths.path'));
 		$joinTable = '_paths';
 		$joinConditions = array(
@@ -268,7 +268,7 @@ class Module {
 		// Fetch data for related modules
 		foreach($this->schema as $name => $info) {
 			if (@in_array($name, $queryParams['fields']) || @in_array($this->name .'.'. $name, $queryParams['fields'])) {
-				if (($relatedModule = $info['relatedModule']) && $relatedModule != 'users') {
+				if (($relatedModule = $info['relatedModule']) && $relatedModule != 'users' && $relatedModule != $this->name) {
 					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/table.ini', true);
 					foreach($relatedModuleSchema as $foreignName => $foreignInfo) {
 						$fields[$name .'_'. $foreignName] = $relatedModule .'.'. $foreignName;
@@ -476,72 +476,22 @@ class Module {
 		}
 	}
 	
-	function DisplayForm($fieldsArray = false) {
-		global $_JAG;
-		
+	function GetForm() {
 		if (!$this->schema) {
 			// This module doesn't have a corresponding table
 			return false;
 		}
 		
 		// Create Form object
-		$form = new Form();
+		return new ModuleForm($this);
+	}
+	
+	function DisplayForm($fieldsArray = false) {
+		global $_JAG;
 		
-		// Load existing values into form, if available
+		// Create Form object
+		if (!$form = $this->GetForm()) return false;
 		
-		if ($this->postData) {
-			// Strip slashes before displaying data
-			foreach ($this->postData as $key => $data) {
-				$cleanArray[$key] = stripslashes($data);
-			}
-			$form->LoadValues($cleanArray);
-		} elseif ($this->rawData[$this->itemID]) {
-			$form->LoadValues($this->rawData[$this->itemID]);
-		}
-		
-		// Load missing fields into form and display error, if applicable
-		if ($this->missingData) {
-			$form->LoadMissingFields($this->missingData);
-			$errorString =
-				$this->strings['form']['missingData'] ?
-				$this->strings['form']['missingData'] :
-				$_JAG['strings']['admin']['missingData'];
-			$params = array('class' => 'errorMissing');
-			$form->AddArbitraryData(e('p', $params, $errorString));
-		}
-		
-		// Load invalid fields into form and display error, if applicable
-		if ($this->invalidData) {
-			$form->LoadInvalidFields($this->invalidData);
-			$errorString =
-				$this->strings['form']['invalidData'] ?
-				$this->strings['form']['invalidData'] :
-				$_JAG['strings']['admin']['invalidData'];
-			$params = array('class' => 'errorInvalid');
-			$form->AddArbitraryData(e('p', $params, $errorString));
-		}
-		
-		// Display error if a file upload failed
-		if ($this->fileUploadError) {
-			/* FIXME: File upload error display is broken
-			switch ($errorCode) {
-				case UPLOAD_ERR_INI_SIZE:
-				case UPLOAD_ERR_FORM_SIZE:
-					$errorString = $_JAG['strings']['admin']['fileUploadErrorSize'];
-					break;
-				case UPLOAD_ERR_PARTIAL:
-					$errorString = $_JAG['strings']['admin']['fileUploadErrorPartial'];
-					break;
-				default:
-					$errorString = $_JAG['strings']['admin']['fileUploadErrorUnknown'];
-					break;
-			}
-			*/
-			$errorString = $this->strings['form']['fileUploadError'] ? $this->strings['form']['fileUploadError'] : $_JAG['strings']['admin']['fileUploadError'];
-			$params = array('class' => 'errorFileUpload');
-			$form->AddArbitraryData(e('p', $params, $errorString));
-		}
-
 		foreach ($this->schema as $name => $info) {
 			// Don't include basic module fields
 			if ($_JAG['moduleFields'][$name]) {
@@ -559,120 +509,10 @@ class Module {
 				$title = $name;
 			}
 			
-			// Look for default value if this item has no value
-			if (!isset($form->values[$name]) && isset($info['default'])) {
-				$form->LoadValue($name, $info['default']);
-			}
-			
-			// Use hidden field when 'hidden' value is true
-			if ($info['hidden']) {
-				$form->AddHidden($name);
-				continue;
-			}
-			
-			switch ($info['type']) {
-				case 'string':
-					$form->AddField($name, 40, $title);
-					break;
-				case 'password':
-					if ($_JAG['user']->IsAdmin()) {
-						// Show as regular field for user with admin privileges
-						$form->AddField($name, 40, $title);
-					} else {
-						$form->AddPassword($name, 40, $title);
-					}
-					break;
-				case 'lang':
-					$languagesArray = $_JAG['strings']['languages'];
-					$form->AddPopup($name, $languagesArray, $title);
-					break;
-				case 'shorttext':
-					$form->AddField($name, 30, $title, 5);
-					break;
-				case 'text':
-					$form->AddField($name, 30, $title, 22);
-					break;
-				case 'int':
-				case 'signedint':
-				case 'multi':
-					// Display appropriate related data if available, else display a plain field
-					if ($info['relatedModule'] || $info['relatedArray']) {
-						if ($relatedData = $this->GetRelatedArray($name)) {
-							if ($info['type'] == 'multi') {
-								$form->AddMultipleSelect($name, $relatedData, $title);
-							} else {
-								$form->AddPopup($name, $relatedData, $title);
-							}
-						} else {
-							$note = e('span', array('class' => 'disabled'), $_JAG['strings']['admin']['na']);
-							$form->AddDisabled($name, $note, $title);
-						}
-					} else {
-						$form->AddField($name, 5, $title);
-					}
-					break;
-					
-				case 'timestamp':
-				case 'datetime':
-					$form->AddDatetime($name, $title);
-					break;
-				case 'bool':
-					$form->AddCheckbox($name, $title);
-					break;
-				case 'file':
-					if ($form->values[$name]) {
-						$form->AddHidden($name .'_id', $this->item[$name]->itemID);
-						// A file has already been uploaded
-						$inputParams = array(
-							'id' => 'deleteFile_'. $name,
-							'name' => 'deleteFile_'. $name,
-							'type' => 'checkbox',
-							'value' => 1
-						);
-						$checkbox = e('span', array('class' => 'fileDeleteCheckbox'), e('input', $inputParams) . $_JAG['strings']['admin']['deleteThisFile']);
-						$filePath = $this->item[$name]->item['path'];
-						switch ($this->item[$name]->item['type']) {
-							case 'image/png':
-							case 'image/jpeg':
-							case 'image/gif':
-								$image = i($filePath .'?context=adminThumbnail', $_JAG['strings']['admin']['thumbnail']);
-								$fileLink = a($filePath, $image, array('class' => 'thumbnail'));
-								break;
-							default:
-								$fileIcon = i('assets/images/admin_file.png', $_JAG['strings']['admin']['fileIcon']);
-								$filePath = a($this->item[$name]->item['path'], $this->item[$name]->item['filename']);
-								$fileLink = $fileIcon . $filePath;
-								break;
-						}
-						$note = $checkbox . $fileLink;
-					} else {
-						// No file has been uploaded yet
-						$note = $_JAG['strings']['admin']['noFile'];
-					}
-					$form->AddFile($name, $title, $note);
-					break;
-			}
+			$form->AutoItem($name, $title);
 		}
 
-		$form->AddHidden('module', $this->name);
-		
-		$id = $this->item['master'] ? $this->item['master'] : $this->itemID;
-		if ($id) {
-			$form->AddHidden('master', $id);
-			$action = 'edit';
-		} else {
-			$action = 'new';
-		}
-		
-		// Determine submit button string
-		$customString = $this->strings['form'][$this->parentModule->name .'.'. $action];
-		if ($customString) {
-			$submitString = $customString;
-		} else {
-			$submitString = $_JAG['strings']['admin'][$action];
-		}
-		
-		$form->AddSubmit('update', $submitString);
+		$form->AddSubmit();
 		$form->Display();
 	}
 
@@ -948,19 +788,17 @@ class Module {
 		if ($keyString = $this->item[$keyColumn]) {
 			$parentPath = $this->config['path'][$_JAG['language']];
 			return ($parentPath ? $parentPath : $this->name) .'/'. String::PrepareForURL($keyString);
+		} else {
+			trigger_error("Couldn't get path; probably lacking item data in module object", E_USER_ERROR);
 		}
 	}
 	
 	function UpdatePath($id = null) {
-		// Check for GetPath() method
-		if (!method_exists($this, 'GetPath')) return false;
-		
 		// Check whether we have data
 		if (!$this->item) {
 			// We don't; we need to fetch data
 			$itemID = $_POST['master'] ? $_POST['master'] : $id;
 			if (!$this->FetchItem($itemID)) {
-				trigger_error("Couldn't fetch item data to update path", E_USER_ERROR);
 				return false;
 			}
 		}

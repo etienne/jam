@@ -210,6 +210,7 @@ class Query {
 						case 'fields': $this->AddFields($param); break;
 						case 'from': $this->AddFrom($param); break;
 						case 'where': $this->AddWhere($param); break;
+						case 'join': $this->AddJoin($param['on'], $param['table'], $param['condition']); break;
 						case 'groupby': $this->AddGroupBy($param); break;
 						case 'orderby': $this->AddOrderBy($param); break;
 						case 'limit': $this->AddLimit($param); break;

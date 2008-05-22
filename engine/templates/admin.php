@@ -11,7 +11,7 @@
 <body>
 
 	<h1><?= $_JAG['project']['projectName'] ?></h1>
-	<a id="logout" href="?a=logout">Logout</a>
+	<a id="logout" href="?a=logout"><?= $_JAG['strings']['admin']['logout'] ?></a>
 
 	<? if($_JAG['user']->IsWebmaster()): ?>
 	<ul id="menu">

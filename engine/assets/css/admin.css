@@ -85,13 +85,9 @@ h2 {
 
 a#logout {
 	position: absolute;
-	top: 5px;
+	top: 3px;
 	right: 5px;
-	display: block;
-	width: 18px;
-	height: 18px;
-	background: url("adminDisconnect.png") no-repeat;
-	text-indent: -9999px;
+	color: gray;
 	border: 0;
 }
 
