@@ -41,7 +41,7 @@ class Database {
 		$queryArray[] = $table;
 		$queryArray[] = 'SET';
 		foreach ($params as $field => $value) {
-			$valuesArray[] = $field ." = '". mysql_real_escape_string($value) ."'";
+			$valuesArray[] = $field ." = '". Database::Sanitize($value) ."'";
 		}
 		$queryArray[] = implode(', ', $valuesArray);
 		$query = implode(' ', $queryArray);
@@ -56,7 +56,7 @@ class Database {
 		
 		// Turn $params array into a string
 		foreach ($params as $field => $value) {
-			$valuesArray[] = $field ." = '". mysql_real_escape_string($value) ."'";
+			$valuesArray[] = $field ." = '". Database::Sanitize($value) ."'";
 		}
 		$values = implode(', ', $valuesArray);
 		
@@ -131,6 +131,15 @@ class Database {
 		} else {
 			// Submitted data is (presumably) already a string; return it untouched
 			return $where;
+		}
+	}
+
+	function Sanitize ($string) {
+		// Sanitize database input
+		if (!get_magic_quotes_gpc()) {
+			return mysql_real_escape_string($string);
+		} else {
+			return $string;
 		}
 	}
 
