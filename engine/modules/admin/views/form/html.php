@@ -1,1 +1,1 @@
-<? $this->DisplayForm() ?>
+<? $this->AutoForm() ?>

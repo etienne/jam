@@ -1,7 +1,25 @@
 <?php
 
 class FilesModule extends Module {
-
+	
+	var $originalFilenames;
+	
+	function FetchItems($queryParams = '') {
+		global $_JAG;
+		
+		parent::FetchItems($queryParams);
+		
+		// Get file size
+		foreach ($this->items as $id => $item) {
+			$filePath = $_JAG['filesDirectory'] . $id;
+			if (!$item['filesize'] && $filesize = filesize($filePath)) {
+				$this->items[$id]['filesize'] = $filesize;
+			}
+		}
+		
+		return $this->items;
+	}
+	
 	function DeleteItem($item) {
 		global $_JAG;
 		
@@ -16,7 +34,7 @@ class FilesModule extends Module {
 		global $_JAG;
 		
 		$tempFilename = $_FILES[$field]['tmp_name'];
-		$originalFilename = $_FILES[$field]['name'];
+		$this->originalFilenames[$field] = $_FILES[$field]['name'];
 		$fileType = $_FILES[$field]['type'];
 		
 		// If we lack a filetype, try to use GetID3 to figure it out
@@ -35,7 +53,7 @@ class FilesModule extends Module {
 		
 		// Insert into files table
 		$params = array(
-			'filename' => $originalFilename,
+			'filename' => $this->originalFilenames[$field],
 			'type' => $fileType
 		);
 		if (!Database::Insert('files', $params)) {
@@ -58,18 +76,6 @@ class FilesModule extends Module {
 			return false;
 		}
 		
-		// Determine path (using custom method, if available)
-		if (method_exists($this->parentModule, 'GetFilePath')) {
-			$path = $this->parentModule->GetFilePath($field, $item);
-		} elseif ($itemPath = $this->parentModule->path) {
-			$path = $itemPath .'/'. $originalFilename;
-		} else {
-			$path = $originalFilename;
-		}
-		if (!Path::Insert($path, $this->moduleID, $fileID)) {
-			trigger_error("Couldn't insert path for uploaded file", E_USER_ERROR);
-		}
-		
 		// Delete previous item if applicable
 		$previousFileID = $this->parentModule->postData[$field];
 		if (!$this->parentModule->config['keepVersions'] && $previousFileID) {
@@ -77,6 +83,16 @@ class FilesModule extends Module {
 		}
 		
 		return $fileID;
+	}
+	
+	function GetPath($field) {
+		if (method_exists($this->parentModule, 'GetFilePath')) {
+			return $this->parentModule->GetFilePath($field);
+		} elseif ($itemPath = $this->parentModule->item['path']) {
+			return $itemPath .'/'. $this->originalFilenames[$field];
+		} else {
+			return $this->originalFilenames[$field];
+		}
 	}
 
 }

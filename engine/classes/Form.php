@@ -26,7 +26,25 @@ class Form {
 	/*
 	 * Public
 	 */
-
+	
+	function Open () {
+		ob_start('mb_output_handler');
+		return true;
+	}
+	
+	function Close () {
+		$formString = ob_get_contents();
+		ob_end_clean();
+		$params = array(
+			'method' => $this->method,
+			'action' => $this->action
+		);
+		if ($this->hasFile) {
+			$params['enctype'] = 'multipart/form-data';
+		}
+		print e('form', $params, $formString);
+	}
+	
 	function LoadValues($values) {
 		if ($this->values = $values) {
 			return true;
@@ -47,7 +65,7 @@ class Form {
 		return ($this->invalid = $fields) ? true : false;
 	}
 
-	function AddItem($name, $item, $title = '') {
+	function Item($name, $item, $title = '') {
 		// If we supply a title, generate <label/> tag
 		if ($title) {
 			$label = e('label', array('for' => 'form_'. $name), $title);
@@ -64,11 +82,10 @@ class Form {
 			// No title means no label and no div
 			$string = $item;
 		}
-		$this->string .= $string;
-		return true;
+		return $string;
 	}
 
-	function AddField($name, $width, $title = '', $height = 1) {
+	function Field($name, $width, $title = '', $height = 1) {
 		if ($height == 1) {
 			// Single-line field is an <input/>
 			$params = array(
@@ -94,11 +111,10 @@ class Form {
 			);
 			$string = e('textarea', $params, $this->values[$name]);
 		}
-		$this->AddItem($name, $string, $title);
-		return true;
+		return $this->Item($name, $string, $title);
 	}
 	
-	function AddPassword($name, $width, $title = '') {
+	function Password($name, $width, $title = '') {
 		$params = array(
 			'id' => 'form_'. $name,
 			'name' => $name,
@@ -107,11 +123,10 @@ class Form {
 			'size' => $width
 		);
 		$string = e('input', $params);
-		$this->AddItem($name, $string, $title);
-		return true;
+		return $this->Item($name, $string, $title);
 	}
 	
-	function AddCheckbox ($name, $title) {
+	function Checkbox ($name, $title = '') {
 		$params = array(
 			'id' => 'form_'. $name,
 			'name' => $name,
@@ -124,11 +139,10 @@ class Form {
 		}
 
 		$string = e('input', $params);
-		$this->AddItem($name, $string, $title);
-		return true;
+		return $this->Item($name, $string, $title);
 	}
 
-	function AddSelect($name, $array, $title = '', $multiple = false, $forbid = '') {
+	function Select($name, $array, $title = '', $multiple = false, $forbid = '') {
 		if (!$forbid) $forbid = array();
 		foreach ($array as $key => $value) {
 			// We may want to disallow certain values
@@ -147,19 +161,18 @@ class Form {
 			$attributes['name'] = $name . '[]';
 		}
 		$string = e('select', $attributes, $options);
-		$this->AddItem($name, $string, $title);
-		return true;
+		return $this->Item($name, $string, $title);
 	}
 	
-	function AddPopup($name, $array, $title = '', $forbid = '') {
-		$this->AddSelect($name, $array, $title, false, $forbid);
+	function Popup($name, $array, $title = '', $forbid = '') {
+		return $this->Select($name, $array, $title, false, $forbid);
 	}
 	
-	function AddMultipleSelect($name, $array, $title = '', $forbid = '') {
-		$this->AddSelect($name, $array, $title, true, $forbid);
+	function MultipleSelect($name, $array, $title = '', $forbid = '') {
+		return $this->Select($name, $array, $title, true, $forbid);
 	}
 
-	function AddDatetime($name, $title) {
+	function Datetime($name, $title) {
 		global $_JAG;
 
 		// If we already have a date in $this->values, use that, otherwise use current time
@@ -173,53 +186,41 @@ class Form {
 			$this->values[$name . '_minutes'] = $date->GetMinutes();
 		}
 		
-		// Create form elements group
-		$formGroup = $this->GetNewFormGroup();
-		
 		// Create arrays for days, hours, and minutes
 		for ($i = 1; $i <= 31; $i++) { $daysArray[$i] = $i; }
 		for ($i = 0; $i <= 23; $i++) { $hoursArray[$i] = $i; }
 		for ($i = 0; $i <= 59; $i++) { $minutesArray[$i] = str_pad($i, 2, '0', STR_PAD_LEFT); }
 		
 		// Date
-		$formGroup->AddPopup($name .'_day', $daysArray);
-		$formGroup->AddPopup($name .'_month', $_JAG['strings']['months']);
-		$formGroup->AddField($name .'_year', 4);
-		
-		// Space
-		$formGroup->AddArbitraryData('  ');
+		$string = $this->Popup($name .'_day', $daysArray);
+		$string .= $this->Popup($name .'_month', $_JAG['strings']['months']);
+		$string .= $this->Field($name .'_year', 4);
 		
 		// Time
-		$formGroup->AddPopup($name .'_hour', $hoursArray);
-		$formGroup->AddArbitraryData(':');
-		$formGroup->AddPopup($name .'_minutes', $minutesArray);
+		$string .= ' '. $this->Popup($name .'_hour', $hoursArray) .':'. $this->Popup($name .'_minutes', $minutesArray);
 		
-		$string = $formGroup->GetString();
-		
-		$this->AddItem($name, $string, $title);
-		return true;
+		return $this->Item($name, $string, $title);
 	}
 
-	function AddFile($name, $title, $note = '') {
+	function File($name, $title, $note = '') {
 		$this->hasFile = true;
 		$phpMaxFileSize = ini_get('upload_max_filesize');
 		$maxFileSize = preg_replace(array('/K/','/M/'), array('000','000000'), $phpMaxFileSize);
-		$this->AddHidden('MAX_FILE_SIZE', $maxFileSize);
+		$this->Hidden('MAX_FILE_SIZE', $maxFileSize);
 		$params = array(
 			'id' => 'form_'. $name,
 			'name' => $name,
 			'type' => 'file'
 		);
 		$string = ($note ? e('p', $note) : '') . e('input', $params);
-		$this->AddItem($name, $string, $title);
-		return true;
+		return $this->Item($name, $string, $title);
 	}
 
-	function AddDisabled($name, $note, $title = '') {
-		$this->AddItem($name, $note, $title);
+	function Disabled($name, $note, $title = '') {
+		return $this->Item($name, $note, $title);
 	}
 	
-	function AddHidden($name, $value = false) {
+	function Hidden($name, $value = false) {
 		if (!$value) {
 			$value = $this->values[$name];
 		}
@@ -230,11 +231,10 @@ class Form {
 			'value' => $value
 		);
 		$string = e('input', $params);
-		$this->AddItem($name, $string);
-		return true;
+		return $this->Item($name, $string);
 	}
 	
-	function AddSubmit($name, $label) {
+	function Submit($name, $label) {
 		$params = array(
 			'id' => 'form_'. $name,
 			'class' => 'submit',
@@ -243,38 +243,9 @@ class Form {
 			'value' => $label
 		);
 		$string = e('input', $params);
-		$this->AddItem($name, $string);
-		return true;
+		return $this->Item($name, $string);
 	}
 	
-	function AddArbitraryData($string) {
-		$this->string .= $string;
-		return true;
-	}
-	
-	function GetNewFormGroup() {
-		return new FormGroup($this);
-	}
-	
-	function GetString() {
-		$params = array(
-			'method' => $this->method,
-			'action' => $this->action
-		);
-		if ($this->hasFile) {
-			$params['enctype'] = 'multipart/form-data';
-		}
-		$string = e('form', $params, $this->string);
-		return $string;
-	}
-	
-	function Display() {
-		if (print $this->GetString()) {
-			return true;
-		} else {
-			return false;
-		}
-	}
 }
 
 ?>

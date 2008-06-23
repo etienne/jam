@@ -1,9 +1,13 @@
 <?php
 
-
 class ModuleForm extends Form {
 	
 	var $module;
+	var $errors;
+	
+	/*
+	 * Constructor
+	 */	
 	
 	function ModuleForm(&$module) {
 		global $_JAG;
@@ -31,7 +35,7 @@ class ModuleForm extends Form {
 				$this->module->strings['form']['missingData'] :
 				$_JAG['strings']['admin']['missingData'];
 			$params = array('class' => 'errorMissing');
-			$this->AddArbitraryData(e('p', $params, $errorString));
+			$this->errors .= e('p', $params, $errorString);
 		}
 		
 		// Load invalid fields into form and display error, if applicable
@@ -42,7 +46,7 @@ class ModuleForm extends Form {
 				$this->module->strings['form']['invalidData'] :
 				$_JAG['strings']['admin']['invalidData'];
 			$params = array('class' => 'errorInvalid');
-			$this->AddArbitraryData(e('p', $params, $errorString));
+			$this->errors .= e('p', $params, $errorString);
 		}
 		
 		// Display error if a file upload failed
@@ -65,9 +69,19 @@ class ModuleForm extends Form {
 				$errorString = $_JAG['strings']['admin']['fileUploadError'];
 			}
 			$params = array('class' => 'errorFileUpload');
-			$this->AddArbitraryData(e('p', $params, $errorString));
+			$this->errors .= e('p', $params, $errorString);
 		}
 		
+	}
+	
+	/*
+	 * Public
+	 */
+	
+	function Open () {
+		ob_start('mb_output_handler');
+		print $this->errors;
+		return true;
 	}
 	
 	function AutoItem($name, $title = '') {
@@ -82,31 +96,30 @@ class ModuleForm extends Form {
 
 		// Use hidden field when 'hidden' value is true
 		if ($info['hidden']) {
-			$form->AddHidden($name);
-			continue;
+			return $form->Hidden($name);
 		}
 
 		switch ($info['type']) {
 			case 'string':
-				$this->AddField($name, 40, $title);
+				return $this->Field($name, 40, $title);
 				break;
 			case 'password':
 				if ($_JAG['user']->IsAdmin()) {
 					// Show as regular field for user with admin privileges
-					$this->AddField($name, 40, $title);
+					return $this->Field($name, 40, $title);
 				} else {
-					$this->AddPassword($name, 40, $title);
+					return $this->Password($name, 40, $title);
 				}
 				break;
 			case 'lang':
 				$languagesArray = $_JAG['strings']['languages'];
-				$this->AddPopup($name, $languagesArray, $title);
+				return $this->Popup($name, $languagesArray, $title);
 				break;
 			case 'shorttext':
-				$this->AddField($name, 30, $title, 5);
+				return $this->Field($name, 30, $title, 5);
 				break;
 			case 'text':
-				$this->AddField($name, 30, $title, 22);
+				return $this->Field($name, 30, $title, 22);
 				break;
 			case 'int':
 			case 'signedint':
@@ -115,33 +128,34 @@ class ModuleForm extends Form {
 				if ($info['relatedModule'] || $info['relatedArray']) {
 					if ($relatedData = $this->module->GetRelatedArray($name)) {
 						if ($info['type'] == 'multi') {
-							$this->AddMultipleSelect($name, $relatedData, $title);
+							return $this->MultipleSelect($name, $relatedData, $title);
 						} else {
 							// Add "none" option for non-required fields
-							if (!$info['required']) {
+							if ($info['relatedModule'] && !$info['required']) {
 								$noneArray = array(0 => $_JAG['strings']['admin']['noOption']);
 								$relatedData = $noneArray + $relatedData;
 							}
-							$this->AddPopup($name, $relatedData, $title);
+							return $this->Popup($name, $relatedData, $title);
 						}
 					} else {
 						$note = e('span', array('class' => 'disabled'), $_JAG['strings']['admin']['na']);
-						$this->AddDisabled($name, $note, $title);
+						return $this->Disabled($name, $note, $title);
 					}
 				} else {
-					$this->AddField($name, 5, $title);
+					return $this->Field($name, 5, $title);
 				}
 				break;
 			case 'timestamp':
 			case 'datetime':
-				$this->AddDatetime($name, $title);
+				return $this->Datetime($name, $title);
 				break;
 			case 'bool':
-				$this->AddCheckbox($name, $title);
+				return $this->Checkbox($name, $title);
 				break;
 			case 'file':
+				$hidden = '';
 				if ($this->values[$name]) {
-					$this->AddHidden($name .'_id', $this->module->item[$name]->itemID);
+					$hidden = $this->Hidden($name .'_id', $this->module->item[$name]->itemID);
 					// A file has already been uploaded
 					$inputParams = array(
 						'id' => 'deleteFile_'. $name,
@@ -169,33 +183,30 @@ class ModuleForm extends Form {
 					// No file has been uploaded yet
 					$note = $_JAG['strings']['admin']['noFile'];
 				}
-				$this->AddFile($name, $title, $note);
+				return $hidden . $this->File($name, $title, $note);
 				break;
 		}
-		
 	}
 	
-	function AddSubmit() {
+	function Submit($label = '') {
 		global $_JAG;
-		$this->AddHidden('module', $this->module->name);
+		$hidden = $this->Hidden('module', $this->module->name);
 		
 		$id = $this->module->item['master'] ? $this->module->item['master'] : $this->module->itemID;
 		if ($id) {
-			$this->AddHidden('master', $id);
+			$hidden .= $this->Hidden('master', $id);
 			$action = 'edit';
 		} else {
 			$action = 'new';
 		}
 		
 		// Determine submit button string
-		$customString = $this->module->strings['form'][$this->module->parentModule->name .'.'. $action];
-		if ($customString) {
-			$submitString = $customString;
-		} else {
+		$customString = $label ? $label : $this->module->strings['form'][$this->module->parentModule->name .'.'. $action];
+		if (!$submitString = $customString) {
 			$submitString = $_JAG['strings']['admin'][$action];
 		}
 		
-		parent::AddSubmit('update', $submitString);
+		return $hidden . parent::Submit('update', $submitString);
 	}
 	
 }

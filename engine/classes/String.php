@@ -93,6 +93,39 @@ class String {
 	function IsURL($url) {
 		return (strpos($url, 'http://') === 0);
 	}
+	
+	function LocalizeNumber($number, $decimals = 1) {
+		global $_JAG;
+		switch ($_JAG['language']) {
+			case 'fr':
+				return number_format($number, $decimals, ',', '&nbsp;');
+				break;
+			default:
+				return number_format($number, $decimals, '.', ',');
+				break;
+		}
+	}
+		
+	function BytesToString($bytes) {
+		global $_JAG;
+		$strings = $_JAG['strings']['filesizeUnits'];
+		
+		if ($bytes == 0) {
+			return '0 '. $strings['kb'];
+		} elseif ($bytes < pow(1024, 2)) {
+			return String::LocalizeNumber($bytes / 1024, 0) .' '. $strings['kb'];
+		} elseif ($bytes < pow(1024, 3)) {
+			return String::LocalizeNumber($bytes / pow(1024, 2)) .' '. $strings['mb'];
+		} elseif ($bytes < pow(1024, 4)) {
+			return String::LocalizeNumber($bytes / pow(1024, 3)) .' '. $strings['gb'];
+		} elseif ($bytes < pow(1024, 5)) {
+			return String::LocalizeNumber($bytes / pow(1024, 4)) .' '. $strings['tb'];
+		} elseif ($bytes < pow(1024, 6)) {
+			return String::LocalizeNumber($bytes / pow(1024, 5)) .' '. $strings['pb'];
+		} else {
+			return false;
+		}
+	}
 
 }
 

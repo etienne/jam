@@ -36,18 +36,69 @@ class Module {
 	var $missingData;
 	var $invalidData;
 	var $fileUploadError;
+	var $files;
 	var $template = array();
 	
 	/*
 	 * Constructor
 	 */
 	
-	function Module($name, $item = '', $parentModule = false) {
-		global $_JAG;
+	function Module($name, $item = '') {
 		$this->name = $name;
 		$this->itemID = $item;
-		$this->parentModule = $parentModule;
+	}
+	
+	/*
+	 * Static
+	 */
+	
+	function DisplayNewModule($name, $item = '') {
+		$module = Module::GetNewModule($name, $item);
+		return $module->Display();
+	}
+	
+	function GetNewModule($name, $item = '', $hasParent = false) {
+		global $_JAG;
+		if (!$_JAG['availableModules'][$name]) trigger_error("Couldn't create new module because '". $name ."' module does not exist", E_USER_ERROR);
+		$className = $name .'Module';
+		$classPath = 'modules/'. $name .'/'. $className .'.php';
+		if (Filesystem::FileExistsInIncludePath($classPath)) {
+			// There is a custom module class; load it and create new instance
+			require_once($classPath);
+			$module = new $className($name, $item);
+		} else {
+			// There is no custom module class; use plain Module class
+			$module = new Module($name, $item);
+		}
 		
+		// Don't run FinishSetup() if module has parent; will run later in NestModule
+		// FIXME: Kludgy.
+		if (!$hasParent) {
+			$module->FinishSetup();
+		}
+		
+		return $module;
+	}
+	
+	function ParseConfigFile($moduleName, $iniFile, $processSections = false) {
+		global $_JAG;
+		
+		// Determine whether requested module is a custom (app-specific) or engine module
+		$iniFileRoot = in_array($moduleName, $_JAG['appModules']) ? 'app' : 'engine';
+		
+		// Build path to config file
+		$iniFilePath = $iniFileRoot .'/modules/'. $moduleName .'/'. $iniFile;
+		
+		return IniFile::Parse($iniFilePath, $processSections);
+	}
+	
+	/*
+	 * Private
+	 */
+	
+	function FinishSetup() {
+		global $_JAG;
+
 		// Check whether this is an app-level or engine-level module
 		$modulePathRoot = in_array($this->name, $_JAG['appModules']) ? 'app' : 'engine';
 		$this->modulePath = $modulePathRoot .'/modules/'. $this->name .'/';
@@ -119,41 +170,6 @@ class Module {
 		
 	}
 	
-	/*
-	 * Static
-	 */
-	
-	function GetNewModule($name, $item = '', $parentModule = false) {
-		global $_JAG;
-		if (!$_JAG['availableModules'][$name]) trigger_error("Couldn't create new module because '". $name ."' module does not exist", E_USER_ERROR);
-		$className = $name .'Module';
-		$classPath = 'modules/'. $name .'/'. $className .'.php';
-		if (Filesystem::FileExistsInIncludePath($classPath)) {
-			// There is a custom module class; load it and create new instance
-			require_once($classPath);
-			return new $className($name, $item, $parentModule);
-		} else {
-			// There is no custom module class; use plain Module class
-			return new Module($name, $item, $parentModule);
-		}
-	}
-	
-	function ParseConfigFile($moduleName, $iniFile, $processSections = false) {
-		global $_JAG;
-		
-		// Determine whether requested module is a custom (app-specific) or engine module
-		$iniFileRoot = in_array($moduleName, $_JAG['appModules']) ? 'app' : 'engine';
-		
-		// Build path to config file
-		$iniFilePath = $iniFileRoot .'/modules/'. $moduleName .'/'. $iniFile;
-		
-		return IniFile::Parse($iniFilePath, $processSections);
-	}
-	
-	/*
-	 * Private
-	 */
-
 	function Install() {
 		global $_JAG;
 		
@@ -207,7 +223,14 @@ class Module {
 	}
 
 	function NestModule($name, $item = '') {
-		return Module::GetNewModule($name, $item, &$this);
+		$module = Module::GetNewModule($name, $item, true);
+		$module->AttachParent($this);
+		$module->FinishSetup();
+		return $module;
+	}
+	
+	function AttachParent(&$parentModule) {
+		$this->parentModule =& $parentModule;
 	}
 	
 	function DisplayNestedModule($name, $item = '') {
@@ -486,11 +509,12 @@ class Module {
 		return new ModuleForm($this);
 	}
 	
-	function DisplayForm($fieldsArray = false) {
+	function AutoForm($fieldsArray = false) {
 		global $_JAG;
 		
 		// Create Form object
 		if (!$form = $this->GetForm()) return false;
+		$form->Open();
 		
 		foreach ($this->schema as $name => $info) {
 			// Don't include basic module fields
@@ -509,11 +533,12 @@ class Module {
 				$title = $name;
 			}
 			
-			$form->AutoItem($name, $title);
+			print $form->AutoItem($name, $title);
 		}
-
-		$form->AddSubmit();
-		$form->Display();
+		
+		print $form->Submit();
+		$form->Close();
+		return true;
 	}
 
 	function ValidateData() {
@@ -577,22 +602,24 @@ class Module {
 						$this->fileUploadError = $errorCode;
 					}
 					
-					$file = $this->NestModule('files');
+					// Add 'files' module if it doesn't exist
+					if (!$this->files) {
+						$this->files = $this->NestModule('files');
+					}
 					
 					// Check whether a file needs to be deleted
 					if ($_POST['deleteFile_'. $field]) {
-						$file->DeleteItem($_POST[$field .'_id']);
+						$this->files->DeleteItem($_POST[$field .'_id']);
 						$this->postData[$field] = 0;
 					}
 					
 					// Make sure file was uploaded correctly
 					if ($_FILES[$field]['error'] === 0) {
 						// Update 'files' table
-						$this->postData[$field] = $file->AddUploadedFile($field);
+						$this->postData[$field] = $this->files->AddUploadedFile($field);
 					}
 					break;
 			}
-			
 		}
 	}
 	
@@ -609,7 +636,7 @@ class Module {
 		
 		// Clear cache entirely; very brutal but will do for now
 		$_JAG['cache']->Clear();
-
+		
 		// Run custom action method if available
 		if ($action = $_POST['action']) {
 			$actionMethod = $action . 'Action';
@@ -757,7 +784,7 @@ class Module {
 		$anchor = $this->config['redirectToAnchor'][$this->parentModule->name];
 		
 		// Reload page
-		HTTP::ReloadCurrentURL($anchor ? '#' . $anchor : '');
+		HTTP::ReloadCurrentURL('?m=updated'. ($anchor ? '#' . $anchor : ''));
 	}
 	
 	function UpdateItems($params, $where) {
@@ -803,21 +830,34 @@ class Module {
 			}
 		}
 		
-		// Run GetPath() method
+		$safeInsert = $this->config['forbidObsoletePaths'] ? false : true;
+
+		// Update path for module item
 		if ($path = $this->GetPath()) {
 			$pathItemID = $_POST['master'] ? $_POST['master'] : $id;
-			$safeInsert = $this->config['forbidObsoletePaths'] ? false : true;
 			if ($insertedPath = Path::Insert($path, $this->moduleID, $pathItemID, $safeInsert)) {
 				$this->item['path'] = $insertedPath;
-				return true;
 			} else {
 				trigger_error("Couldn't insert path in database", E_USER_ERROR);
 				return false;
 			}
-		} else {
-			trigger_error("Couldn't update path because no path was returned", E_USER_WARNING);
-			return false;
 		}
+		
+		// Update path for files
+		if ($this->files) {
+			foreach ($this->schema as $name => $info) {
+				$fileID = $this->item[$name]->itemID;
+				if ($info['type'] == 'file' && $fileID) {
+					if ($filePath = $this->files->GetPath($name)) {
+						if (!Path::Insert($filePath, $this->files->moduleID, $fileID, $safeInsert)) {
+							trigger_error("Couldn't insert path for file associated with field ". $name ." in module ". $this->name, E_USER_ERROR);
+						}
+					}
+				}
+			}
+		}
+		
+		
 	}
 	
 	function Revert($id) {

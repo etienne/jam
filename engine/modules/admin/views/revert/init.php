@@ -12,14 +12,6 @@ $this->template['backLink'] = a('admin/'. $this->name .'?a=old&id='. $masterID, 
 $this->template['message'] = $_JAG['strings']['admin']['revertConfirmation'];
 
 // Build confirmation form
-$confirmForm = new Form();
-$confirmForm->AddHidden('module', $this->name);
-$confirmForm->AddHidden('revertID', $_GET['id']);
-$confirmForm->AddHidden('master', $masterID);
-$confirmForm->AddHidden('action', 'revert');
-$confirmForm->AddSubmit('cancel', $_JAG['strings']['admin']['cancel']);
-$confirmForm->AddSubmit('revert', $_JAG['strings']['admin']['revert']);
-$this->template['confirmForm'] = $confirmForm->GetString();
-
+$this->template['confirmForm'] = new Form();
 
 ?>

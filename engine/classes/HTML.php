@@ -7,9 +7,10 @@ class HTML {
 	
 	function Element ($elementName, $argument1 = false, $argument2 = false) {
 		global $_JAG;
-		if (is_array($argument1)) {  // Make sure this is a non-empty array
+		
+		if (is_array($argument1)) {
 			// The first argument is an array and represents the element's attributes
-			// Convert attributes to usable string
+			// Convert attributes to string
 			foreach ($argument1 as $attributeName => $attributeValue) {
 				$attributesString .= ' '. $attributeName .'="'. $attributeValue .'"';
 			}
@@ -18,21 +19,24 @@ class HTML {
 		} elseif (is_string($argument1)) {
 			// The first argument represents the element's content; the second is not used
 			$content = $argument1;
-		} else {
-			// Element has neither attributes nor content (e.g. <br />)
+		}
+
+		// Some elements need a close tag even though they're empty
+		$elementsWithCloseTags = array('textarea');
+		if ($content || in_array($elementName, $elementsWithCloseTags)) {
+			$closeTag = HTML::ElementClose($elementName);
 		}
 		
-		// Some elements need a close tag whether they have content or not
-		$elementsWithCloseTags = array('textarea');
-		$needCloseTag = ($content || in_array($elementName, $elementsWithCloseTags));
-		
-		$elementString =
-			"\n<" . $elementName .
-			($attributesString ? $attributesString : '') .
-			($needCloseTag ? '>' : (!$_JAG['project']['useHTML4'] ? ' />' : '>')) .
-			$content . ($needCloseTag ? ('</'. $elementName .'>') : '');
-		return $elementString;
-	} 
+		// Some elements can be empty and self-closed
+		$selfClosingElements = array('base', 'link', 'meta', 'hr', 'br', 'img', 'embed', 'param', 'area', 'col', 'input');
+		$selfClose = (!$_JAG['project']['useHTML4'] && !$content && in_array($elementName, $selfClosingElements));
+
+		return '<'. $elementName . $attributesString . ($selfClose ? ' />' : '>') . $content . $closeTag;
+	}
+	
+	function ElementClose ($elementName) {
+		return '</'. $elementName .'>';
+	}
 	
 	function Anchor ($url, $text, $attributes = false) {
 		if (!String::IsURL($url)) $url = ROOT . $url;
@@ -81,6 +85,11 @@ class HTML {
 			// ]]>
 			</script>';
 		return $string;
+	}
+	
+	function EncodedEmail($email, $text, $title = null) {
+		require_once('engine/libraries/enkoder.php');
+		return Enkode::enkode_mail($email, $text, $title);
 	}
 	
 }

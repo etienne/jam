@@ -3,7 +3,7 @@
 // Get list of contexts
 $contexts = IniFile::Parse('engine/config/imageContexts.ini', true);
 if ($appContexts = IniFile::Parse('app/config/imageContexts.ini', true)) {
-	$contexts += $moduleContexts;
+	$contexts += $appContexts;
 }
 
 // Get path to file

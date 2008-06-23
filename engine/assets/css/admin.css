@@ -220,13 +220,17 @@ table {
 	border-spacing: 0;
 }
 
-tr {
+th, td {
+	padding-right: 20px;
 }
 
-th, td {
+td {
+	border-bottom: 1px solid #ddd;
 }
 
 th {
+	font-weight: bold;
+	border-bottom: 1px solid #999;
 }
 
 /* Forms

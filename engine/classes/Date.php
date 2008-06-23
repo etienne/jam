@@ -42,7 +42,7 @@ class Date {
 		$this->gmtTimestamp = $this->timestamp + (-$_JAG['server']['serverTime'] * 60 * 60);
 		
 		// Get local database time
-		$this->now = $_JAG['databaseTime'];
+		$this->now = strtotime($_JAG['databaseTime']);
 	}
 	
 	function LongDate() {
@@ -100,8 +100,12 @@ class Date {
 		return date($formatString, $this->timestamp);
 	}
 	
+	function ShortDate() {
+		return date('Y.m.d', $this->timestamp);
+	}
+	
 	function ShortDateAndTime() {
-		return date('Y.m.d g:i A',$this->timestamp);
+		return date('Y.m.d g:i A', $this->timestamp);
 	}
 	
 	function HTTPTimestamp() {

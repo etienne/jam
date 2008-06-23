@@ -75,10 +75,11 @@ class User {
 		}
 		// Display form if login was incorrect or user has not yet submitted the form
 		$form = new Form();
-		$form->AddField('login', 40, $_JAG['strings']['admin']['login']);
-		$form->AddPassword('password', 40, $_JAG['strings']['admin']['password']);
-		$form->AddSubmit('connect', $_JAG['strings']['admin']['connect']);
-		$form->Display();
+		$form->Open();
+		print $form->Field('login', 40, $_JAG['strings']['admin']['login']);
+		print $form->Password('password', 40, $_JAG['strings']['admin']['password']);
+		print $form->Submit('connect', $_JAG['strings']['admin']['connect']);
+		$form->Close();
 	}
 	
 	function Login($id) {
