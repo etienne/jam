@@ -111,10 +111,6 @@ class ModuleForm extends Form {
 					return $this->Password($name, 40, $title);
 				}
 				break;
-			case 'lang':
-				$languagesArray = $_JAG['strings']['languages'];
-				return $this->Popup($name, $languagesArray, $title);
-				break;
 			case 'shorttext':
 				return $this->Field($name, 30, $title, 5);
 				break;

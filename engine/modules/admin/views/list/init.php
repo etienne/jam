@@ -13,13 +13,15 @@ if (!$queryParams = Module::ParseConfigFile($this->name, 'config/keyQuery.ini', 
 // Fetch data
 $this->FetchItems($queryParams);
 
-// Determine which field is what
-foreach (reset($this->items) as $field => $data) {
-	if ($this->schema[$field]['type'] == 'id' || $field == 'master') {
-		$this->template['idColumn'] = $field;
-	} else {
-		$this->template['keyColumn'] = $keyColumn ? $keyColumn : $field;
-		break;
+if ($this->items) {
+	// Determine which field is what
+	foreach (reset($this->items) as $field => $data) {
+		if ($this->schema[$field]['type'] == 'id' || $field == 'master') {
+			$this->template['idColumn'] = $field;
+		} elseif ($field != 'language' && $field != 'path') { // FIXME: Kludgy.
+			$this->template['keyColumn'] = $field;
+			break;
+		}
 	}
 }
 

@@ -11,7 +11,14 @@
 <body>
 
 	<h1><?= $_JAG['project']['projectName'] ?></h1>
-	<a id="logout" href="?a=logout"><?= $_JAG['strings']['admin']['logout'] ?></a>
+	<ul id="toplinks">
+		<? foreach ($_JAG['project']['languages'] as $language): ?>
+		<? if ($language != $_JAG['language']): ?>
+		<li><a href="?language=<?= $language ?>"><?= $_JAG['strings']['languages'][$language] ?></a></li>
+		<? endif; ?>
+		<? endforeach; ?>
+		<li><a id="logout" href="?a=logout"><?= $_JAG['strings']['admin']['logout'] ?></a></li>
+	</ul>
 
 	<? if($_JAG['user']->IsWebmaster()): ?>
 	<ul id="menu">

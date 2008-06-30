@@ -1,9 +1,13 @@
-Je viens de faire plein de modifications assez importantes au code, et je n'ai pas testé outre mesure, donc c'est sans doute encore très buggy, mais pour l'application bidon ça semble bien fonctionner.
-
-Je vais faire une TODO bientôt, et peut-être une ébauche de documentation.
+Procédure d'installation
+------------------------
 
 1. Modifier .htaccess selon votre configuration
 2. Modifier app/config/server.ini selon votre configuration
-3. Loader l'URL correspondant au répertoire d'installation
+3. Charger l'URL correspondant au répertoire d'installation
 
-Normalement vous devriez tomber sur la page d'administration et être en mesure d'insérer des données dans la base de données.
+Normalement vous devriez tomber sur la page d'administration et être en mesure d'insérer des données dans la base de données. Le nom et le mot de passe par défaut sont admin/admin.
+
+Todo
+----
+
+- Ajouter des foreign keys, en particulier pour que les traductions s'effacent toutes seules quand on efface l'item parent.

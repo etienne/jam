@@ -27,10 +27,6 @@ strong {
 	font-weight: bold;
 }
 
-dl {
-	font-size: 90%;
-}
-
 dt {
 	font-weight: bold;
 }
@@ -38,6 +34,13 @@ dt {
 dd {
 	margin: 0 0 1em 0;
 	padding: 0;
+}
+
+code {
+	display: block;
+	background-color: #eee;
+	padding: 8px 16px;
+	margin: 10px 0;
 }
 
 div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUpload {
@@ -83,12 +86,28 @@ h2 {
    --------------------------------------------------
 */
 
-a#logout {
+ul#toplinks {
 	position: absolute;
 	top: 3px;
-	right: 5px;
-	color: gray;
+	right: 0;
+}
+
+ul#toplinks li {
+	float: left;
+	margin-right: 16px;
+}
+
+ul#toplinks a {
+	color: #ccc;
 	border: 0;
+}
+
+ul#toplinks a#logout {
+	color: gray;
+}
+
+ul#toplinks a:hover, ul#toplinks a#logout:hover {
+	color: white;
 }
 
 /* Menu
@@ -233,6 +252,33 @@ th {
 	border-bottom: 1px solid #999;
 }
 
+/* Translation
+   --------------------------------------------------
+*/
+
+dl#translate_original {
+	width: 540px;
+	background-color: #eee;
+	padding: 10px 15px;
+	margin-bottom: 10px;
+}
+
+dl#translate_original dt {
+	font-weight: normal;
+	color: #aaa;
+	float: left;
+	width: 145px;
+	margin-right: 30px;
+	height: 20px;
+	overflow: hidden;
+}
+
+dl#translate_original dd {
+	margin: 0;
+	color: #666;
+	padding-left: 175px;
+}
+
 /* Forms
    --------------------------------------------------
 */
@@ -312,4 +358,10 @@ a.thumbnail {
 
 a.thumbnail img {
 	display: block;
+}
+
+/* Menu module */
+
+ul.menu ul {
+	margin-left: 20px;
 }

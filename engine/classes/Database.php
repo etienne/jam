@@ -36,6 +36,10 @@ class Database {
 		return mysql_insert_id();
 	}
 	
+	function GetAffectedRows () {
+		return mysql_affected_rows();
+	}
+	
 	function Insert ($table, $params) {
 		$queryArray[] = 'INSERT INTO';
 		$queryArray[] = $table;

@@ -60,6 +60,9 @@ $_JAG['filesDirectory'] = 'files/';
 $_JAG['project'] = IniFile::Parse('app/config/project.ini', true);
 $_JAG['server'] = IniFile::Parse('app/config/server.ini', true);
 
+// Define constants
+define('ROOT', $_JAG['server']['root']);
+
 // Load database field types
 $_JAG['fieldTypes'] = IniFile::Parse('engine/database/types.ini');
 
@@ -75,9 +78,9 @@ $_JAG['defaultLanguage'] = $_JAG['project']['languages'][0];
 
 // Determine requested language
 $requestedLanguage = $_GET['language'];
-if ($requestedLanguage && $_JAG['project']['languages'][$requestedLanguage]) {
+if ($requestedLanguage && in_array($requestedLanguage, $_JAG['project']['languages'])) {
 	// User has manually switched language
-	Cookie::Create('language',$requestedLanguage);
+	Cookie::Create('language', $requestedLanguage);
 	$_JAG['language'] = $requestedLanguage;
 } elseif ($_COOKIE['language']) {
 	// User has previously selected a language
@@ -109,7 +112,6 @@ $pathString = $_SERVER['REQUEST_URI'];
 $barePath = substr($pathString, 0, strrpos($pathString, '?'));
 $pathString = $barePath ? $barePath : $pathString;
 $fullRequest = rtrim($pathString, '/');
-define('ROOT', $_JAG['server']['root']);
 preg_match('|^'. ROOT .'(.*)$|', $fullRequest, $requestArray);
 
 // Use requested URL, or use root path if none was requested

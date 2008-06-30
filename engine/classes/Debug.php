@@ -8,7 +8,7 @@ class Debug {
 		global $_JAG;
 		
 		// Make sure user is an admin
-		if (!$_JAG['user']->IsAdmin()) return false;
+		if (!$_JAG['user'] || !$_JAG['user']->IsAdmin()) return false;
 		
 		// Display passed object
 		if (is_array($thing) || is_object($thing)) {

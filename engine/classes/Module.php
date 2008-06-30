@@ -21,7 +21,8 @@ class Module {
 	var $keyFieldName;
 	var $hasFiles;
 	var $hasMulti;
-	var $multiRelatedModules;
+	var $hasLocalizedFields;
+	var $isLocalizable;
 
 	var $adminMenuStrings;
 	var $strings;
@@ -93,6 +94,25 @@ class Module {
 	}
 	
 	/*
+	 * Static private
+	 */
+
+	function InsertTableNames ($array, $oldName, $newName) {
+		// Recursive function to process custom parameters
+		foreach ($array as $key => $value) {
+			if (is_string($value)) {
+				$returnArray[$key] = preg_replace('/^'. $oldName .'/', $newName, $value);
+			} elseif (is_array($value)) {
+				$returnArray[$key] = Module::InsertTableNames($value, $oldName, $newName);
+			} else  {
+				$returnArray[$key] = $value;
+			}
+		}
+		return $returnArray;
+	}
+	
+	
+	/*
 	 * Private
 	 */
 	
@@ -134,6 +154,11 @@ class Module {
 					$this->keyFieldName = $name;
 				}
 				
+				// Determine whether we have localized fields
+				if ($info['localizable']) {
+					$this->isLocalizable = true;
+				}
+				
 				// Look for specific field types
 				switch ($info['type']) {
 					case 'file':
@@ -150,7 +175,7 @@ class Module {
 		}
 		
 		// Make sure module is installed and get ID for this module
-		if ($this->moduleID = array_search($this->name, $_JAG['installedModules'])) {
+		if ($this->moduleID = @array_search($this->name, $_JAG['installedModules'])) {
 			
 			// Update data if this module has a table and we have the right POST data
 			if ($this->schema && $_POST['module'] == $this->name) {
@@ -181,11 +206,33 @@ class Module {
 		
 		// Determine whether we need a table at all
 		if ($this->schema) {
-			// Create table
-			if (!Database::CreateTable($this->name, $this->schema)) {
-				trigger_error("Couldn't create table for module ". $this->name, E_USER_ERROR);
-				return false;
+			// Split fields between main table and localized table
+			foreach ($this->schema as $name => $info) {
+				// Find fields identified as "localizable"
+				if ($info['localizable']) {
+					$localizedTableSchema[$name] = $info;
+				} else {
+					$mainTableSchema[$name] = $info;
+				}
 			}
+			
+			// Create main table
+			if ($mainTableSchema) {
+				if (!Database::CreateTable($this->name, $mainTableSchema)) {
+					trigger_error("Couldn't create table for module ". $this->name, E_USER_ERROR);
+					return false;
+				}
+				// If localized fields were found, we need a localized table
+				if ($localizedTableSchema) {
+					$baseFields = IniFile::Parse('engine/database/localizedTableFields.ini', true);
+					$localizedTableSchema = $baseFields + $localizedTableSchema;
+					if (!Database::CreateTable($this->name .'_localized', $localizedTableSchema)) {
+						trigger_error("Couldn't create localized table for module ". $this->name, E_USER_ERROR);
+						return false;
+					}
+				}
+			}
+			
 		}
 		
 		// Add entry to _modules table
@@ -242,20 +289,25 @@ class Module {
 		global $_JAG;
 		
 		$params = array(
-			'where' => ($this->config['keepVersions'] ? 'master' : $this->name .'.id') .' = '. $id,
+			'where' => ($this->config['keepVersions'] ? 'master' : 'id') .' = '. $id,
 			'limit' => 1
 		);
 		
 		foreach($this->schema as $name => $info) {
-			$params['fields'][$name] = $this->name .'.'. $name;
+			$params['fields'][$name] = $name;
 		}
 	
-		$this->itemID = $id;
-		$item = $this->FetchItems($params);
-		return $this->item = $item[$id];
+		if ($item = $this->FetchItems($params)) {
+			$this->itemID = $id;
+			return $this->item = $item[$id];
+		} else {
+			return false;
+		}
 	}
 	
 	function FetchItems($queryParams = '') {
+		global $_JAG;
+		
 		$query = new Query();
 		$query->AddFrom($this->name);
 		
@@ -270,27 +322,35 @@ class Module {
 			$query->AddFields(array('id' => $this->name .'.id'));
 		}
 		
-		// Add custom parameters
-		$query->LoadParameters($queryParams);
-		
 		// Order by master if we're keeping versions
 		if ($this->config['keepVersions']) {
 			$query->AddOrderBy('master DESC');
 		}
 		
-		// Load paths if appropriate
-		$query->AddFields(array('path' => '_paths.path'));
-		$joinTable = '_paths';
-		$joinConditions = array(
-			'_paths.module = '. $this->moduleID,
-			'_paths.current = 1',
-			'_paths.item = '. $this->name .'.id'
-		);
-		$query->AddJoin($this->name, $joinTable, $joinConditions);
+		// Add localized data
+		if ($this->isLocalizable) {
+			$localizedTable = $this->name .'_localized';
+			$query->AddFields(array('language' => $localizedTable .'.language'));
+			$query->AddFrom($localizedTable);
+			$where = array(
+				$localizedTable .'.item = '. $this->name .'.id',
+				$localizedTable .".language = '". $_JAG['language'] ."'"
+			);
+			$query->AddWhere($where);
+		}
 		
-		// Fetch data for related modules
 		foreach($this->schema as $name => $info) {
-			if (@in_array($name, $queryParams['fields']) || @in_array($this->name .'.'. $name, $queryParams['fields'])) {
+			// Process custom parameters
+			if ($info['localizable']) {
+				$replaceString = $this->name .'_localized.'. $name;
+			} else {
+				$replaceString = $this->name .'.'. $name;
+			}
+			
+			$queryParams = Module::InsertTableNames($queryParams, $name, $replaceString);
+			
+			// Fetch data for related modules
+			if (@in_array($name, $queryParams['fields'])) {
 				if (($relatedModule = $info['relatedModule']) && $relatedModule != 'users' && $relatedModule != $this->name) {
 					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/table.ini', true);
 					foreach($relatedModuleSchema as $foreignName => $foreignInfo) {
@@ -303,7 +363,20 @@ class Module {
 				}
 			}
 		}
-				
+		
+		// Load custom parameters
+		$query->LoadParameters($queryParams);
+		
+		// Load paths if appropriate
+		$query->AddFields(array('path' => '_paths.path'));
+		$joinTable = '_paths';
+		$joinConditions = array(
+			'_paths.module = '. $this->moduleID,
+			'_paths.current = 1',
+			'_paths.item = '. $this->name .'.id'
+		);
+		$query->AddJoin($this->name, $joinTable, $joinConditions);
+		
 		// Fetch actual module data
 		if ($dataArray = $query->GetArray()) {
 			
@@ -411,13 +484,6 @@ class Module {
 			if ($this->itemID) {
 				$this->FetchItem($this->itemID);
 			} elseif ($queryParams = IniFile::Parse($viewDir . '/query.ini', true)) {
-				// Make references to fields from this module explicit
-				foreach($queryParams['fields'] as $alias => $field) {
-					if (!is_string($alias) && $this->schema[$field]) {
-						unset($queryParams['fields'][$alias]);
-						$queryParams['fields'][$field] = $this->name .'.'. $field;
-					}
-				}
 				$this->FetchItems($queryParams);
 			}
 		}
@@ -509,12 +575,28 @@ class Module {
 		return new ModuleForm($this);
 	}
 	
-	function AutoForm($fieldsArray = false) {
+	function AutoForm($fieldsArray = false, $hiddenFields = false) {
 		global $_JAG;
 		
 		// Create Form object
 		if (!$form = $this->GetForm()) return false;
 		$form->Open();
+		
+		// Include language selection menu if applicable
+		if (
+			!$this->config['languageAgnostic'] &&
+			(count($_JAG['project']['languages']) > 1) &&
+			!($fieldsArray && !@in_array('language', $fieldsArray))
+		) {
+			if ($this->item) {
+				print $form->Hidden('language');
+			} else {
+				foreach ($_JAG['project']['languages'] as $language) {
+					$languagesArray[$language] = $_JAG['strings']['languages'][$language];
+				}
+				print $form->Popup('language', $languagesArray, $_JAG['strings']['form']['language']);
+			}
+		}
 		
 		foreach ($this->schema as $name => $info) {
 			// Don't include basic module fields
@@ -536,13 +618,18 @@ class Module {
 			print $form->AutoItem($name, $title);
 		}
 		
+		if ($hiddenFields) {
+			foreach ($hiddenFields as $field => $value) {
+				print $form->Hidden($field, $value);
+			}
+		}
+		
 		print $form->Submit();
 		$form->Close();
 		return true;
 	}
 
 	function ValidateData() {
-		
 		// Get data from $_POST and make sure required data is present
 		foreach ($this->schema as $field => $info) {
 			// Collect data from $_POST
@@ -621,6 +708,11 @@ class Module {
 					break;
 			}
 		}
+		
+		// Language field should be included as well
+		if (isset($_POST['language'])) {
+			$this->postData['language'] = $_POST['language'];
+		}
 	}
 	
 	function ProcessData() {
@@ -654,129 +746,151 @@ class Module {
 
 		// Determine what we need to insert from what was submitted
 		foreach ($this->schema as $name => $info) {
-			if (isset($this->postData[$name])) {
+			// Make sure data exists, and exclude 'multi' fields; we handle them later
+			if (isset($this->postData[$name]) && $info['type'] != 'multi') {
 				// TODO - Ajouter affaire persmissions write access, genre
-				// Exclude 'multi' fields; we handle them later
-				if ($info['type'] != 'multi') {	
+				if ($info['localizable']) {
+					$localizedData[$name] = $this->postData[$name];
+				} else {
 					$insertData[$name] = $this->postData[$name];
 				}
 			}
 		}
 		
-		if (!$this->config['useCustomTable']) {
-			// This is a standard table with special fields
-			
-			// If user is logged in, insert user ID
-			if ($_JAG['user']->id) {
-				$insertData['user'] = $_JAG['user']->id;
-			}
-			
-			// If no language was given, insert default language
-			if (!$this->postData['language']) {
-				$insertData['language'] = $_JAG['defaultLanguage'];
-			}
-			
-		}
-		
-		if (!$this->config['keepVersions']) {
-			// Standard table; simple update
-			
-			if ($_POST['master']) {
-				// Update mode
-				$where = 'id = '. $_POST['master'];
-				if (!$this->UpdateItems($insertData, $where)) {
-					// Update failed
-					trigger_error("Couldn't update module", E_USER_ERROR);
-					return false;
+		if (!$_GET['item']) { // FIXME: More kludge! Translations again.
+			if (!$this->config['useCustomTable']) {
+				// This is a standard table with special fields
+
+				// If user is logged in, insert user ID
+				if ($_JAG['user']->id) {
+					$insertData['user'] = $_JAG['user']->id;
 				}
-				$insertID = $_POST['master'];
-			} else {
-				// Post mode
-				if (!$this->config['useCustomTable']) {
-					$insertData['created'] = $_JAG['databaseTime'];
-				}
-				if (!Database::Insert($this->name, $insertData)) {
-					trigger_error("Couldn't insert into module ". $this->name, E_USER_ERROR);
-					return false;
-				}
-				
-				// Keep ID of inserted item for path
-				$insertID = Database::GetLastInsertID();
 			}
-		} else {
-			// Special update for tables with multiple versions support
-			
-			// Set item as current
-			$insertData['current'] = true;
-			
-			// If we already have a creation date and one wasn't specified, use that
-			if (!$insertData['created'] && $this->item['created']) {
-				$insertData['created'] = $this->item['created'];
-			}
-			
-			if (!Database::Insert($this->name, $insertData)) {
-				trigger_error("Couldn't insert into module ". $this->name, E_USER_ERROR);
-			} else {
-				// Keep ID of inserted item for path
-				$insertID = Database::GetLastInsertID();
-				
-				// $this->postData now represents actual data
-				$this->LoadData($this->postData);
-	
-				// Disable all other items with the same master
-				if ($insertData['master']) {
-					$updateParams['current'] = false;
-					$whereArray = array(
-						array(
-							'master = '. $insertData['master'],
-							'id = '. $insertData['master']
-						),
-						'id != '. $insertID
-					);
-					$where = Database::GetWhereString($whereArray);
-					if (!Database::Update($this->name, $updateParams, $where)) {
-						trigger_error("Couldn't update module ". $this->name, E_USER_ERROR);
+
+			if (!$this->config['keepVersions']) {
+				// Standard table; simple update
+
+				if ($_POST['master']) {
+					// Update mode
+					$where = 'id = '. $_POST['master'];
+					if (!$this->UpdateItems($insertData, $where)) {
+						// Update failed
+						trigger_error("Couldn't update module", E_USER_ERROR);
 						return false;
 					}
-				}
-			}
-			
-		}
-		
-		// Update path
-		$this->UpdatePath($insertID);
-		
-		// Get ID for this item
-		$id = $_POST['master'] ? $_POST['master'] : $insertID;
+					$insertID = $_POST['master'];
+				} else {
+					// Post mode
+					if (!$this->config['useCustomTable']) {
+						$insertData['created'] = $_JAG['databaseTime'];
+					}
+					if (!Database::Insert($this->name, $insertData)) {
+						trigger_error("Couldn't insert into module ". $this->name, E_USER_ERROR);
+						return false;
+					}
 
-		// Delete previous many-to-many relationships
-		$where = array(
-			'frommodule = '. $this->moduleID,
-			'fromid = '. $insertID
-		);
-		if (!Database::DeleteFrom('_relationships', $where)) {
-			trigger_error("Couldn't delete previous many-to-many relationships for module ". $this->name, E_USER_ERROR);
-		}
-		
-		foreach ($this->schema as $name => $info) {
-			switch ($info['type']) {
-				case 'multi':
-					// Insert many-to-many relationships
-					foreach ($this->postData[$name] as $targetID) {
-						// Insert each item into _relationships table
-						$targetModuleName = $info['relatedModule'];
-						$targetModuleID = array_search($targetModuleName, $_JAG['installedModules']);
-						$params = array(
-							'frommodule' => $this->moduleID,
-							'fromid' => $insertID,
-							'tomodule' => $targetModuleID,
-							'toid' => $targetID
+					// Keep ID of inserted item for path
+					$insertID = Database::GetLastInsertID();
+				}
+			} else {
+				// Special update for tables with multiple versions support
+
+				// Set item as current
+				$insertData['current'] = true;
+
+				// If we already have a creation date and one wasn't specified, use that
+				if (!$insertData['created'] && $this->item['created']) {
+					$insertData['created'] = $this->item['created'];
+				}
+
+				if (!Database::Insert($this->name, $insertData)) {
+					trigger_error("Couldn't insert into module ". $this->name, E_USER_ERROR);
+				} else {
+					// Keep ID of inserted item for path
+					$insertID = Database::GetLastInsertID();
+
+					// $this->postData now represents actual data
+					$this->LoadData($this->postData);
+
+					// Disable all other items with the same master
+					if ($insertData['master']) {
+						$updateParams['current'] = false;
+						$whereArray = array(
+							array(
+								'master = '. $insertData['master'],
+								'id = '. $insertData['master']
+							),
+							'id != '. $insertID
 						);
-						if (!Database::Insert('_relationships', $params)) {
-							trigger_error("Couldn't insert many-to-many relationship for module ". $this->name, E_USER_ERROR);
+						$where = Database::GetWhereString($whereArray);
+						if (!Database::Update($this->name, $updateParams, $where)) {
+							trigger_error("Couldn't update module ". $this->name, E_USER_ERROR);
+							return false;
 						}
 					}
-					break;
+				}
+
+			}
+		} else {
+			// FIXME: Kuldgy. Added to make translations work.
+			$insertID = $_GET['item'];
+		}
+		
+		// Insert localized data
+		if ($localizedData) {
+			$tableName = $this->name .'_localized';
+			$localizedData['item'] = $insertID;
+			$localizedData['language'] = $this->postData['language'];
+			$where = array('item = '. $insertID, "language = '". $localizedData['language'] ."'");
+			if (Database::Update($tableName, $localizedData, $where)) {
+				// Insert if no rows were affected
+				if (Database::GetAffectedRows() == 0) {
+					if (!Database::Insert($tableName, $localizedData)) {
+						trigger_error("Couldn't insert localized data for module ". $this->name, E_USER_ERROR);
+					}
+				}
+			} else {
+				trigger_error("Couldn't update localized data for module ". $this->name, E_USER_ERROR);
+				return false;
+			}
+		}
+		
+		if ($insertID) {
+			// Update path
+			$this->UpdatePath($insertID);
+
+			// Get ID for this item
+			$id = $_POST['master'] ? $_POST['master'] : $insertID;
+
+			// Delete previous many-to-many relationships
+			$where = array(
+				'frommodule = '. $this->moduleID,
+				'fromid = '. $insertID
+			);
+			if (!Database::DeleteFrom('_relationships', $where)) {
+				trigger_error("Couldn't delete previous many-to-many relationships for module ". $this->name, E_USER_ERROR);
+			}
+
+			foreach ($this->schema as $name => $info) {
+				switch ($info['type']) {
+					case 'multi':
+						// Insert many-to-many relationships
+						foreach ($this->postData[$name] as $targetID) {
+							// Insert each item into _relationships table
+							$targetModuleName = $info['relatedModule'];
+							$targetModuleID = array_search($targetModuleName, $_JAG['installedModules']);
+							$params = array(
+								'frommodule' => $this->moduleID,
+								'fromid' => $insertID,
+								'tomodule' => $targetModuleID,
+								'toid' => $targetID
+							);
+							if (!Database::Insert('_relationships', $params)) {
+								trigger_error("Couldn't insert many-to-many relationship for module ". $this->name, E_USER_ERROR);
+							}
+						}
+						break;
+				}
 			}
 		}
 		
@@ -821,13 +935,21 @@ class Module {
 	}
 	
 	function UpdatePath($id = null) {
+		global $_JAG;
+		
 		// Check whether we have data
 		if (!$this->item) {
 			// We don't; we need to fetch data
 			$itemID = $_POST['master'] ? $_POST['master'] : $id;
+			// FIXME: Again, fucking kludge for translations.
+			if ($_POST['language']) {
+				$originalLanguage = $_JAG['language'];
+				$_JAG['language'] = $_POST['language'];
+			}
 			if (!$this->FetchItem($itemID)) {
 				return false;
 			}
+			if ($originalLanguage) $_JAG['language'] = $originalLanguage;
 		}
 		
 		$safeInsert = $this->config['forbidObsoletePaths'] ? false : true;
@@ -835,7 +957,8 @@ class Module {
 		// Update path for module item
 		if ($path = $this->GetPath()) {
 			$pathItemID = $_POST['master'] ? $_POST['master'] : $id;
-			if ($insertedPath = Path::Insert($path, $this->moduleID, $pathItemID, $safeInsert)) {
+			$language = $_POST['language'];
+			if ($insertedPath = Path::Insert($path, $this->moduleID, $pathItemID, $safeInsert, $language)) {
 				$this->item['path'] = $insertedPath;
 			} else {
 				trigger_error("Couldn't insert path in database", E_USER_ERROR);
