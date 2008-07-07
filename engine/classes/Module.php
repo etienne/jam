@@ -101,7 +101,7 @@ class Module {
 		// Recursive function to process custom parameters
 		foreach ($array as $key => $value) {
 			if (is_string($value)) {
-				$returnArray[$key] = preg_replace('/^'. $oldName .'/', $newName, $value);
+				$returnArray[$key] = preg_replace('/^'. $oldName .'$/', $newName, $value);
 			} elseif (is_array($value)) {
 				$returnArray[$key] = Module::InsertTableNames($value, $oldName, $newName);
 			} else  {
@@ -289,7 +289,7 @@ class Module {
 		global $_JAG;
 		
 		$params = array(
-			'where' => ($this->config['keepVersions'] ? 'master' : 'id') .' = '. $id,
+			'where' => ($this->config['keepVersions'] ? $this->name . '.master' : $this->name . '.id') .' = '. $id,
 			'limit' => 1
 		);
 		
