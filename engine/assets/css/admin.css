@@ -215,13 +215,21 @@ ul.items li a:hover {
    --------------------------------------------------
 */
 
-ul.images li {
-	display: inline;
-	padding: 0 10px 10px 0;
+ul.images a {
+	float: left;
+	margin: 0 10px 10px 0;
+	color: #ddd;
+	border: 1px solid;
 }
 
-ul.images a img {
-	border: 3px solid;
+ul.images a:hover {
+	color: #dc3e13;
+}
+
+ul.images img {
+	display: block;
+	width: 100px;
+	height: 100px;
 }
 
 /* Tables

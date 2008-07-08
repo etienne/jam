@@ -6,6 +6,7 @@ if (!$queryParams = Module::ParseConfigFile($this->name, 'config/keyQuery.ini', 
 	foreach ($this->schema as $name => $info) {
 		if ($info['key']) {
 			$queryParams = array('fields' => $name);
+			$this->template['keyColumnType'] = $info['type'];
 		}
 	}
 }
@@ -23,6 +24,7 @@ if ($this->items) {
 			break;
 		}
 	}
+	$this->template['editLinkPrefix'] = 'admin/'. $this->name .'?a=edit&id=';
 }
 
 ?>

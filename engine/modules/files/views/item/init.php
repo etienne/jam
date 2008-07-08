@@ -11,7 +11,21 @@ $file = $_JAG['filesDirectory'] . $this->itemID;
 
 if ($context = $contexts[$_GET['context']]) {
 	$image = new Image($file);
-	$image->OutputResizedImage($context['width'], $context['height']);
+	
+	// Set dimensions according to context
+	$width = $context['width'];
+	$height = $context['height'];
+	
+	if ($context['allowScaleUp'] === '') {
+		// Scale up is forbidden; check whether we're scaling up
+		if ($context['width'] > $image->width || $context['height'] > $image->height) {
+			// We're indeed scaling up; override context dimensions with actual file dimensions
+			$width = $image->width;
+			$height = $image->height;
+		}
+	}
+
+	$image->OutputResizedImage($width, $height);
 } else {
 	// Set MIME type, if available
 	if ($this->items[$this->itemID]['type']) {
