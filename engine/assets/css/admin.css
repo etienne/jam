@@ -1,10 +1,14 @@
 body {
 	font-size: 11px;
 	line-height: 20px;
-	color: black;
+	color: #333;
 	background-color: white;
-	font-family: "Lucida Grande", Arial, sans-serif;
-	margin-bottom: 60px;
+	font-family: Helvetica, Arial, sans-serif;
+	margin: 10px 20px 0 20px;
+}
+
+input, select, option, textarea {
+	font-family: inherit;
 }
 
 div.clear {
@@ -15,12 +19,9 @@ div.clear {
 a {
 	color: black;
 	text-decoration: none;
-	border-bottom: 1px solid #ddd;
 }
 
 a:hover {
-	color: #dc3e13;
-	border-bottom: 1px solid #dc3e13;
 }
 
 strong {
@@ -44,26 +45,29 @@ code {
 }
 
 div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUpload {
-	background-color: #fdf563;
-	padding: 8px 16px;
-	width: 538px;
+	padding: 10px 0;
+	background: url("lined.png") top left repeat-x;
+	width: 570px;
 	margin-bottom: 12px;
+	float: left;
+	font-size: 15px;
+	color: #d10;
 }
 
 p.errorInvalid {
-	background-color: #ddd;
-}
-
-div.confirm p {
+	background-color: #eee;
 }
 
 div.confirm form {
 	margin: 8px 0 5px;
-	text-align: right;
+	float: right;
 }
 
 div.confirm input.submit {
-	margin: 0 0 0 12px;
+	margin: 0 0 0 10px;
+	float: left;
+	font-size: 11px;
+	font-weight: bold;
 }
 
 /* Titles
@@ -71,43 +75,43 @@ div.confirm input.submit {
 */
 
 h1 {
-	font-size: 11px;
-	background-color: #333;
-	color: white;
-	padding: 3px 16px;
+	font-size: 15px;
 	font-weight: bold;
+	margin: 17px 0 50px 0;
 }
 
 h2 {
 	font-weight: bold;
 }
 
-/* Logout button
+/* Top links
    --------------------------------------------------
 */
 
 ul#toplinks {
 	position: absolute;
-	top: 3px;
-	right: 0;
+	top: 10px;
+	right: 20px;
+}
+
+ul#toplinks li:first-child {
+	border: 0;
 }
 
 ul#toplinks li {
 	float: left;
-	margin-right: 16px;
+	margin-left: 12px;
+	border-left: 1px solid #eee;
+	padding: 6px 0 6px 12px;
 }
 
 ul#toplinks a {
-	color: #ccc;
 	border: 0;
+	font-weight: bold;
 }
 
-ul#toplinks a#logout {
-	color: gray;
-}
-
-ul#toplinks a:hover, ul#toplinks a#logout:hover {
-	color: white;
+ul#toplinks a:hover {
+	color: #d10;
 }
 
 /* Menu
@@ -119,17 +123,16 @@ ul#menu {
 	width: 160px;
 }
 
-ul#menu li {
-}
-
 ul#menu a {
+	font-size: 15px;
+	color: #aaa;
 	display: block;
-	padding: 5px 16px;
-	border-bottom: 1px solid #ddd;
+	padding: 4px 10px;
+	margin-left: -10px;
 }
 
 ul#menu a:hover {
-	background-color: #dc3e13;
+	background-color: #d10;
 	color: white;
 }
 
@@ -138,24 +141,33 @@ ul#menu a:hover {
 */
 
 div#body {
-	margin: 16px 0 0 190px;
+	float: left;
+	margin: 0 0 60px 30px;
 }
 
 p.addItem {
 	font-size: 125%;
 }
 
-a.button {
+a.button, ul.actions a, input.submit {
+	font-size: 11px;
+	font-weight: bold;
+	padding: 4px 12px;
+	border: none;
+	color: white;
+	background-color: #333;
 	display: block;
-	width: 128px;
-	margin: 16px 0;
-	padding: 5px 16px;
-	border: 1px solid #ddd;
+	cursor: pointer;
 }
 
-a.button:hover {
-	background-color: #dc3e13;
-	color: white;
+a.button {
+	clear: both;
+	float: left;
+	margin-bottom: 20px;
+}
+
+a.button:hover, ul.actions a:hover, input.submit:hover {
+	background-color: #d10;
 }
 
 /* Item actions
@@ -163,28 +175,17 @@ a.button:hover {
 */
 
 ul.actions {
-	width: 570px;
+	float: right;
 	margin: 20px 0 32px;
 	text-align: right;
 }
 
-ul.actions li {
-	display: inline;
-}
-
 ul.actions a {
-	margin-left: 4px;
-	padding: 8px 16px;
-	border: 1px solid #ddd;
+	margin-left: 10px;
 }
 
 ul.actions li a + li a {
 	background-color: gray;
-}
-
-ul.actions a:hover {
-	background-color: #dc3e13;
-	color: white;
 }
 
 /* Lists
@@ -192,7 +193,7 @@ ul.actions a:hover {
 */
 
 ul.items {
-	margin: 6px 0 20px;
+	clear: both;
 	width: 380px;
 }
 
@@ -202,12 +203,13 @@ ul.items li {
 
 ul.items li a {
 	display: block;
-	padding: 3px 16px;
-	border-bottom: 1px solid #ddd;
+	padding: 3px 10px;
+	font-weight: bold;
+	border-bottom: 1px solid #eee;
 }
 
 ul.items li a:hover {
-	background-color: #dc3e13;
+	background-color: #d10;
 	color: white;
 }
 
@@ -218,12 +220,12 @@ ul.items li a:hover {
 ul.images a {
 	float: left;
 	margin: 0 10px 10px 0;
-	color: #ddd;
+	color: #eee;
 	border: 1px solid;
 }
 
 ul.images a:hover {
-	color: #dc3e13;
+	color: #d10;
 }
 
 ul.images img {
@@ -252,7 +254,7 @@ th, td {
 }
 
 td {
-	border-bottom: 1px solid #ddd;
+	border-bottom: 1px solid #eee;
 }
 
 th {
@@ -291,6 +293,10 @@ dl#translate_original dd {
    --------------------------------------------------
 */
 
+form {
+	clear: both;
+}
+
 div.actions {
 	width: 570px;
 	margin-bottom: 16px;
@@ -300,15 +306,15 @@ div.actions {
 form > div {
 	width: 570px;
 	padding: 5px 0;
-	border-bottom: 1px solid #ddd;
+	border-bottom: 1px solid #eee;
 }
 
 form div.missing {
-	color: #dc3e13;
+	color: #d10;
 }
 
 form div.invalid {
-	color: #ddd;
+	color: #eee;
 }
 
 form label {
@@ -341,7 +347,7 @@ form textarea {
 }
 
 form input.submit {
-	font-size: 16px;
+	line-height: 20px;
 	margin: 8px 0 0 190px;
 }
 
@@ -351,7 +357,7 @@ form fieldset {
 }
 
 form span.disabled {
-	color: #ddd;
+	color: #eee;
 }
 
 span.fileDeleteCheckbox {

@@ -17,6 +17,7 @@
 		<li><a href="?language=<?= $language ?>"><?= $_JAG['strings']['languages'][$language] ?></a></li>
 		<? endif; ?>
 		<? endforeach; ?>
+		<li><a href="<?= ROOT ?>"><?= $_JAG['strings']['admin']['returnToSite'] ?></a></li>
 		<li><a id="logout" href="?a=logout"><?= $_JAG['strings']['admin']['logout'] ?></a></li>
 	</ul>
 
