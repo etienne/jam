@@ -4,11 +4,16 @@ body {
 	color: #333;
 	background-color: white;
 	font-family: Helvetica, Arial, sans-serif;
-	margin: 10px 20px 0 20px;
+	margin: 0;
 }
 
 input, select, option, textarea {
 	font-family: inherit;
+	font-size: 11px;
+}
+
+textarea {
+	line-height: 16px;
 }
 
 div.clear {
@@ -22,9 +27,14 @@ a {
 }
 
 a:hover {
+	color: #d10;
 }
 
 strong {
+	font-weight: bold;
+}
+
+h2 {
 	font-weight: bold;
 }
 
@@ -45,6 +55,7 @@ code {
 }
 
 div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUpload {
+	clear: both;
 	padding: 10px 0;
 	background: url("lined.png") top left repeat-x;
 	width: 570px;
@@ -54,8 +65,9 @@ div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUplo
 	color: #d10;
 }
 
-p.errorInvalid {
-	background-color: #eee;
+p.notice {
+	clear: both;
+	color: #999;
 }
 
 div.confirm form {
@@ -70,18 +82,17 @@ div.confirm input.submit {
 	font-weight: bold;
 }
 
-/* Titles
+/* Header
    --------------------------------------------------
 */
 
 h1 {
+	color: #ddd;
+	background-color: #333;
 	font-size: 15px;
 	font-weight: bold;
-	margin: 17px 0 50px 0;
-}
-
-h2 {
-	font-weight: bold;
+	padding: 15px 0 15px 20px;
+	margin-bottom: 27px;
 }
 
 /* Top links
@@ -101,13 +112,14 @@ ul#toplinks li:first-child {
 ul#toplinks li {
 	float: left;
 	margin-left: 12px;
-	border-left: 1px solid #eee;
+	border-left: 1px solid #444;
 	padding: 6px 0 6px 12px;
 }
 
 ul#toplinks a {
 	border: 0;
 	font-weight: bold;
+	color: #ddd;
 }
 
 ul#toplinks a:hover {
@@ -119,7 +131,8 @@ ul#toplinks a:hover {
 */
 
 ul#menu {
-	float: left;
+	position: absolute;
+	left: 20px;
 	width: 160px;
 }
 
@@ -131,9 +144,13 @@ ul#menu a {
 	margin-left: -10px;
 }
 
-ul#menu a:hover {
-	background-color: #d10;
+ul#menu a:hover, ul#menu li.current a:hover {
+	background-color: #333;
 	color: white;
+}
+
+ul#menu li.current a {
+	color: black;
 }
 
 /* Body
@@ -142,15 +159,15 @@ ul#menu a:hover {
 
 div#body {
 	float: left;
-	margin: 0 0 60px 30px;
+	padding: 0 20px 60px 210px;
 }
 
 p.addItem {
 	font-size: 125%;
 }
 
-a.button, ul.actions a, input.submit {
-	font-size: 11px;
+input.submit {
+	font-size: 13px;
 	font-weight: bold;
 	padding: 4px 12px;
 	border: none;
@@ -160,14 +177,23 @@ a.button, ul.actions a, input.submit {
 	cursor: pointer;
 }
 
-a.button {
-	clear: both;
-	float: left;
-	margin-bottom: 20px;
+input.submit:hover {
+	background-color: #d10;
 }
 
-a.button:hover, ul.actions a:hover, input.submit:hover {
+a.button {
+	color: #d10;
+	font-size: 13px;
+	padding: 5px 10px;
+	margin: 0 0 20px -10px;
+	font-weight: bold;
+	clear: both;
+	float: left;
+}
+
+a.button:hover {
 	background-color: #d10;
+	color: white;
 }
 
 /* Item actions
@@ -176,16 +202,22 @@ a.button:hover, ul.actions a:hover, input.submit:hover {
 
 ul.actions {
 	float: right;
-	margin: 20px 0 32px;
+	margin: 0 0 24px;
 	text-align: right;
 }
 
 ul.actions a {
 	margin-left: 10px;
+	font-weight: bold;
+	color: #333;
+	padding: 4px 10px;
+	display: block;
+	margin-right: -10px;
 }
 
-ul.actions li a + li a {
-	background-color: gray;
+ul.actions a:hover {
+	background-color: #d10;
+	color: white;
 }
 
 /* Lists
@@ -203,7 +235,7 @@ ul.items li {
 
 ul.items li a {
 	display: block;
-	padding: 3px 10px;
+	padding: 3px 0px;
 	font-weight: bold;
 	border-bottom: 1px solid #eee;
 }
@@ -211,11 +243,17 @@ ul.items li a {
 ul.items li a:hover {
 	background-color: #d10;
 	color: white;
+	padding: 3px 10px;
+	margin: 0 -10px;
 }
 
 /* Image lists
    --------------------------------------------------
 */
+
+ul.images, ul.images li {
+	float: left;
+}
 
 ul.images a {
 	float: left;
@@ -226,6 +264,8 @@ ul.images a {
 
 ul.images a:hover {
 	color: #d10;
+	border-width: 4px;
+	margin: -3px 7px 7px -3px;
 }
 
 ul.images img {
@@ -238,28 +278,74 @@ ul.images img {
    --------------------------------------------------
 */
 
-p.itemCount {
-	font-size: 90%;
-	color: #acacb6;
-	margin: 6px 0;
-	padding: 0;
-}
-
-table {
+table.items {
+	clear: both;
 	border-spacing: 0;
+	margin-left: -10px;
 }
 
-th, td {
-	padding-right: 20px;
+table.items th, table.items td {
+	padding: 3px 10px 3px 10px;
+	color: #666;
 }
 
-td {
-	border-bottom: 1px solid #eee;
+table.items th a {
+	color: #aaa;
+	padding: 3px 12px 3px 0;
 }
 
-th {
+table.items th a.sort {
+	background: url("sortUp.png") no-repeat center right;
+}
+
+table.items th a.sort.up {
+	background: url("sortDown.png") no-repeat center right;
+}
+
+table.items th.hover {
+	background-color: #eee;
+	cursor: hand;
+	cursor: pointer;
+}
+
+table.items td {
+	border-top: 1px solid #eee;
+}
+
+table.items td a {
 	font-weight: bold;
-	border-bottom: 1px solid #999;
+}
+
+table.items td.delete {
+	background-color: white;
+}
+
+table.items td.delete a {
+	padding: 4px 0;
+	color: #ccc;
+}
+
+table.items td.delete a:hover {
+	color: #d10;
+}
+
+table.items tr.hover {
+	background-color: #333;
+	cursor: hand;
+	cursor: pointer;
+}
+
+table.items tr.hover td {
+}
+
+table.items tr.hover * {
+	color: white;
+}
+
+input.search {
+	margin: 10px 0;
+	float: left;
+	clear: both;
 }
 
 /* Translation
@@ -347,7 +433,7 @@ form textarea {
 }
 
 form input.submit {
-	line-height: 20px;
+	height: 28px;
 	margin: 8px 0 0 190px;
 }
 
@@ -357,7 +443,7 @@ form fieldset {
 }
 
 form span.disabled {
-	color: #eee;
+	color: #ccc;
 }
 
 span.fileDeleteCheckbox {

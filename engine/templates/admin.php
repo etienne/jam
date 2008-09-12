@@ -10,27 +10,30 @@
 </head>
 <body>
 
-	<h1><?= $_JAG['project']['projectName'] ?></h1>
-	<ul id="toplinks">
-		<? foreach ($_JAG['project']['languages'] as $language): ?>
-		<? if ($language != $_JAG['language']): ?>
-		<li><a href="?language=<?= $language ?>"><?= $_JAG['strings']['languages'][$language] ?></a></li>
-		<? endif; ?>
-		<? endforeach; ?>
-		<li><a href="<?= ROOT ?>"><?= $_JAG['strings']['admin']['returnToSite'] ?></a></li>
-		<li><a id="logout" href="?a=logout"><?= $_JAG['strings']['admin']['logout'] ?></a></li>
-	</ul>
+	<div id="header">
+		<h1><?= $_JAG['project']['projectName'] ?></h1>
+		<ul id="toplinks">
+			<? foreach ($_JAG['project']['languages'] as $language): ?>
+			<? if ($language != $_JAG['language']): ?>
+			<li><a href="?language=<?= $language ?>"><?= $_JAG['strings']['languages'][$language] ?></a></li>
+			<? endif; ?>
+			<? endforeach; ?>
+			<li><a href="<?= ROOT ?>"><?= $_JAG['strings']['admin']['returnToSite'] ?></a></li>
+			<li><a id="logout" href="?a=logout"><?= $_JAG['strings']['admin']['logout'] ?></a></li>
+		</ul>
+	</div>
 
 	<? if($_JAG['user']->IsWebmaster()): ?>
 	<ul id="menu">
 		<? foreach($_JAG['installedModules'] as $module): ?>
-			<? if ($menuStrings = Module::ParseConfigFile($module, 'config/admin.ini')): ?>
-				<li><?= a('admin/'. $module, $menuStrings[$_JAG['language']]) ?></li>
+			<? if ($menuString = Module::GetAdminMenuString($module)): ?>
+				<? $link = 'admin/'. $module ?>
+				<li<?= $link == $_JAG['request'] ? ' class="current"' : '' ?>><?= a('admin/'. $module, $menuString) ?></li>
 			<? endif; ?>
 		<? endforeach; ?>
 	</ul>
 	<? endif; ?>
-
+	
 	<div id="body">
 		<? if($messageString = $_JAG['strings']['adminMessages'][$_GET['m']]): ?>
 			<p class="message"><?= $messageString ?></p>

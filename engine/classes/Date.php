@@ -87,6 +87,11 @@ class Date {
 		}
 	}
 	
+	function SmartDateAndTime() {
+		global $_JAG;
+		return $this->SmartDate() .', '. $this->Time24();
+	}
+	
 	function Time24() {
 		return date('G:i', $this->timestamp);
 	}

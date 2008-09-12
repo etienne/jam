@@ -319,6 +319,7 @@ class Query {
 		
 		// Make sure we have exactly two fields
 		if (mysql_num_fields($this->GetResult()) != 2) {
+			echo $this->GetQueryString();
 			trigger_error('Query::GetSimpleArray() requires a query with exactly two fields', E_USER_WARNING);
 			return false;
 		}

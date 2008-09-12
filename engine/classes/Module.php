@@ -96,7 +96,20 @@ class Module {
 	/*
 	 * Static private
 	 */
-
+	
+	function GetAdminMenuString($module) {
+		global $_JAG;
+		$config = Module::ParseConfigFile($module, 'config/config.ini');
+		$strings = Module::ParseConfigFile($module, 'strings/'. $_JAG['language'] .'.ini');
+		if ($config['hideFromAdmin']) {
+			return false;
+		} elseif ($string = $strings['adminTitle']) {
+			return $string;
+		} else {
+			return $module;
+		}
+	}
+	
 	function InsertTableNames ($array, $oldName, $newName) {
 		// Recursive function to process custom parameters
 		foreach ($array as $key => $value) {
@@ -131,11 +144,17 @@ class Module {
 		// Load configuration files
 		$this->config = IniFile::Parse($this->modulePath .'config/config.ini', true);
 		$this->strings = IniFile::Parse($this->modulePath .'strings/'. $_JAG['language'] .'.ini', true);
-		$this->adminMenuStrings = IniFile::Parse($this->modulePath .'config/admin.ini');
 		
 		// Get info for this module's table, if there is one
 		if ($schema = IniFile::Parse($this->modulePath .'config/table.ini', true)) {
-
+			
+			// Determine key field
+			if (!$this->keyFieldName = $this->config['keyField']) {
+				// If config file didn't specify a key field, use the first field
+				reset($schema);
+				$this->keyFieldName = key($schema);
+			}
+			
 			// Merge with standard basic fields if applicable
 			if ($this->config['useCustomTable']) {
 				$this->schema = $schema;
@@ -149,10 +168,6 @@ class Module {
 			}
 
 			foreach ($this->schema as $name => $info) {
-				// Find name of key field
-				if ($info['key'] == true) {
-					$this->keyFieldName = $name;
-				}
 				
 				// Determine whether we have localized fields
 				if ($info['localizable']) {
@@ -241,13 +256,11 @@ class Module {
 			// Get ID of the row we just inserted
 			$this->moduleID = Database::GetLastInsertID();
 			
-			// Add admin path to _paths table if necessary
-			if ($this->adminMenuStrings) {
-				$adminModuleID = array_search('admin', $_JAG['installedModules']);
-				if (!Path::Insert('admin/'. $this->name, $adminModuleID, $this->moduleID)) {
-					trigger_error("Couldn't add admin path for module ". $this->name, E_USER_ERROR);
-					return false;
-				}
+			// Add admin path to _paths table FIXME: Untested
+			$adminModuleID = array_search('admin', $_JAG['installedModules']);
+			if (!Path::Insert('admin/'. $this->name, $adminModuleID, $this->moduleID)) {
+				trigger_error("Couldn't add admin path for module ". $this->name, E_USER_ERROR);
+				return false;
 			}
 			
 			// Add paths to _paths table if needed
@@ -296,10 +309,10 @@ class Module {
 		foreach($this->schema as $name => $info) {
 			$params['fields'][$name] = $name;
 		}
-	
-		if ($item = $this->FetchItems($params)) {
+		
+		if ($items = $this->FetchItems($params)) {
 			$this->itemID = $id;
-			return $this->item = $item[$id];
+			return $this->item = current($items);
 		} else {
 			return false;
 		}
@@ -322,10 +335,11 @@ class Module {
 			$query->AddFields(array('id' => $this->name .'.id'));
 		}
 		
+		/*
 		// Order by master if we're keeping versions
 		if ($this->config['keepVersions']) {
 			$query->AddOrderBy('master DESC');
-		}
+		}*/
 		
 		// Add localized data
 		if ($this->isLocalizable) {
@@ -340,6 +354,13 @@ class Module {
 		}
 		
 		foreach($this->schema as $name => $info) {
+			// Manually remove multi fields from query; they will be processed anyway (possibly kludgy)
+			if ($info['type'] == 'multi') {
+				if ($multiFieldKey = array_search($name, $queryParams['fields'])) {
+					unset($queryParams['fields'][$multiFieldKey]);
+				}
+			}
+
 			// Process custom parameters
 			if ($info['localizable']) {
 				$replaceString = $this->name .'_localized.'. $name;
@@ -347,11 +368,14 @@ class Module {
 				$replaceString = $this->name .'.'. $name;
 			}
 			
-			$queryParams = Module::InsertTableNames($queryParams, $name, $replaceString);
-			
 			// Fetch data for related modules
 			if (@in_array($name, $queryParams['fields'])) {
-				if (($relatedModule = $info['relatedModule']) && $relatedModule != 'users' && $relatedModule != $this->name) {
+				if (
+					$info['type'] == 'int' && 
+					($relatedModule = $info['relatedModule']) &&
+					$relatedModule != 'users' &&
+					$relatedModule != $this->name
+				) {
 					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/table.ini', true);
 					foreach($relatedModuleSchema as $foreignName => $foreignInfo) {
 						$fields[$name .'_'. $foreignName] = $relatedModule .'.'. $foreignName;
@@ -362,6 +386,7 @@ class Module {
 					$query->AddJoin($this->name, $joinTable, $joinCondition);
 				}
 			}
+			$queryParams = Module::InsertTableNames($queryParams, $name, $replaceString);
 		}
 		
 		// Load custom parameters
@@ -373,7 +398,7 @@ class Module {
 		$joinConditions = array(
 			'_paths.module = '. $this->moduleID,
 			'_paths.current = 1',
-			'_paths.item = '. $this->name .'.id'
+			'_paths.item = '. $this->name . ($this->config['keepVersions'] ? '.master' : '.id')
 		);
 		$query->AddJoin($this->name, $joinTable, $joinConditions);
 		
@@ -525,19 +550,19 @@ class Module {
 				// Fetch array using specified query
 				$relatedQuery = new Query($relatedQueryParams);
 
-			} elseif ($relatedTableInfo = Module::ParseConfigFile($relatedModule, 'config/table.ini', true)) {
-				
-				// Try to find a key field in related module table
-				foreach ($relatedTableInfo as $field => $info) {
-					if ($info['key'] == true) {
-						$keyColumn = $field;
-					}
+			} else {
+				$relatedModuleConfig = Module::ParseConfigFile($relatedModule, 'config/config.ini', true);
+				if (!$keyField = $relatedModuleConfig['keyField']) {
+					// If no key field was specified in config file, use first field
+					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/table.ini', true);
+					reset($relatedModuleSchema);
+					$keyField = key($relatedModuleSchema);
 				}
-				
-				// If we did find a key field, build query according to that
-				if ($keyColumn) {
+
+				// If we do find a key field, build query according to that
+				if ($keyField) {
 					$params = array();
-					$params['fields'] = array('id', $keyColumn);
+					$params['fields'] = array('id', $keyField);
 					$relatedQuery = new Query($params);
 				}
 			}
@@ -594,13 +619,18 @@ class Module {
 				foreach ($_JAG['project']['languages'] as $language) {
 					$languagesArray[$language] = $_JAG['strings']['languages'][$language];
 				}
-				print $form->Popup('language', $languagesArray, $_JAG['strings']['form']['language']);
+				print $form->Popup('language', $languagesArray, $_JAG['strings']['fields']['language']);
 			}
 		}
 		
 		foreach ($this->schema as $name => $info) {
 			// Don't include basic module fields
-			if ($_JAG['moduleFields'][$name]) {
+			if (!$this->config['useCustomTable'] && $_JAG['moduleFields'][$name]) {
+				continue;
+			}
+			
+			// Don't include versions support fields
+			if ($this->config['keepVersions'] && $_JAG['versionsSupportFields'][$name]) {
 				continue;
 			}
 			
@@ -610,7 +640,7 @@ class Module {
 			}
 			
 			// Get proper title from string
-			if (!$title = $this->strings['form'][$name]) {
+			if (!$title = $this->strings['fields'][$name]) {
 				// Use field name if no localized string is found
 				$title = $name;
 			}
@@ -922,11 +952,7 @@ class Module {
 		// Only run this method if 'autoPaths' switch is set
 		if (!$this->config['autoPaths']) return false;
 		
-		// Find key column
-		foreach ($this->schema as $name => $info) {
-			if ($info['key']) $keyColumn = $name;
-		}
-		if ($keyString = $this->item[$keyColumn]) {
+		if ($keyString = $this->item[$this->keyFieldName]) {
 			$parentPath = $this->config['path'][$_JAG['language']];
 			return ($parentPath ? $parentPath : $this->name) .'/'. String::PrepareForURL($keyString);
 		} else {

@@ -31,8 +31,8 @@ class ModuleForm extends Form {
 		if ($this->module->missingData) {
 			$this->LoadMissingFields($this->module->missingData);
 			$errorString =
-				$this->module->strings['form']['missingData'] ?
-				$this->module->strings['form']['missingData'] :
+				$this->module->strings['fields']['missingData'] ?
+				$this->module->strings['fields']['missingData'] :
 				$_JAG['strings']['admin']['missingData'];
 			$params = array('class' => 'errorMissing');
 			$this->errors .= e('p', $params, $errorString);
@@ -42,8 +42,8 @@ class ModuleForm extends Form {
 		if ($this->module->invalidData) {
 			$this->LoadInvalidFields($this->module->invalidData);
 			$errorString =
-				$this->module->strings['form']['invalidData'] ?
-				$this->module->strings['form']['invalidData'] :
+				$this->module->strings['fields']['invalidData'] ?
+				$this->module->strings['fields']['invalidData'] :
 				$_JAG['strings']['admin']['invalidData'];
 			$params = array('class' => 'errorInvalid');
 			$this->errors .= e('p', $params, $errorString);
@@ -65,7 +65,7 @@ class ModuleForm extends Form {
 					break;
 			}
 			*/
-			if (!$errorString = $this->module->strings['form']['fileUploadError']) {
+			if (!$errorString = $this->module->strings['fields']['fileUploadError']) {
 				$errorString = $_JAG['strings']['admin']['fileUploadError'];
 			}
 			$params = array('class' => 'errorFileUpload');
@@ -197,7 +197,7 @@ class ModuleForm extends Form {
 		}
 		
 		// Determine submit button string
-		$customString = $label ? $label : $this->module->strings['form'][$this->module->parentModule->name .'.'. $action];
+		$customString = $label ? $label : $this->module->strings['fields'][$this->module->parentModule->name .'.'. $action];
 		if (!$submitString = $customString) {
 			$submitString = $_JAG['strings']['admin'][$action];
 		}

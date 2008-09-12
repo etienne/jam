@@ -1,29 +1,54 @@
 <?php
 
-// Check whether there's a key query
-if (!$queryParams = Module::ParseConfigFile($this->name, 'config/keyQuery.ini', true)) {
-	// Look for key fields if no key queries were found
+if (!$fields = $this->config['adminListFields']) {
 	foreach ($this->schema as $name => $info) {
-		if ($info['key']) {
-			$queryParams = array('fields' => $name);
-			$this->template['keyColumnType'] = $info['type'];
+		if (!$_JAG['moduleFields'][$name] && !$_JAG['versionsSupportFields'][$name]) {
+			$fields[] = $name;
 		}
 	}
 }
+
+foreach ($fields as $field) {
+	if ($relatedArray = $this->GetRelatedArray($field)) {
+		$this->template['relatedArrays'][$field] = $relatedArray;
+	}
+}
+
+$queryParams['fields'] = $fields;
+$this->template['tableFields'] = $fields;
+
+// Determine sort order
+$requestedSortField = $_GET['s'] ? $_GET['s'] : $this->config['adminListSortBy'];
+if ($this->schema[$requestedSortField] && in_array($requestedSortField, $fields)) {
+	$sortField = $requestedSortField;
+} else {
+	// If no sorting was requested, use first field
+	$sortField = current($fields);
+}
+
+// Determine type of sort field
+$this->template['sortFieldType'] = $this->schema[$sortField]['type'];
+
+// Check whether sorting order should be reversed
+$reverseSort = $_GET['r'] ? 1 : 0;
+
+// Store sort parameters in template variables
+$this->template['sortField'] = $sortField;
+$this->template['reverseSort'] = $reverseSort;
+
+// Sort order is reversed for dates
+if ($this->schema[$sortField]['type'] == 'datetime') {
+	$reverseSort = (int)!$reverseSort;
+}
+
+// Modify query accordingly
+$sortOrder = $reverseSort ? 'DESC' : 'ASC';
+$queryParams['orderby'] = $sortField .' '. $sortOrder;
 
 // Fetch data
 $this->FetchItems($queryParams);
 
 if ($this->items) {
-	// Determine which field is what
-	foreach (reset($this->items) as $field => $data) {
-		if ($this->schema[$field]['type'] == 'id' || $field == 'master') {
-			$this->template['idColumn'] = $field;
-		} elseif ($field != 'language' && $field != 'path') { // FIXME: Kludgy.
-			$this->template['keyColumn'] = $field;
-			break;
-		}
-	}
 	$this->template['editLinkPrefix'] = 'admin/'. $this->name .'?a=edit&id=';
 }
 

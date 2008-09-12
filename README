@@ -11,3 +11,4 @@ Todo
 ----
 
 - Ajouter des foreign keys, en particulier pour que les traductions s'effacent toutes seules quand on efface l'item parent.
+- Dans les modules, déplacer les paths de config/config.ini vers strings/*.ini?
