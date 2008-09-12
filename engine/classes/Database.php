@@ -112,10 +112,22 @@ class Database {
 			// Make sure given type exists before adding the field
 			if ($_JAG['fieldTypes'][$type]) {
 				$fields[] = $field .' '. $_JAG['fieldTypes'][$type] . $defaultString;
+				if (is_array($info) && $info['relatedModule']) {
+					// Add foreign keys
+					$indexes[] = $field;
+					$foreignFields[$field] = $info['relatedModule'];
+				}
 			}
 		}
 		$fieldDefinitions = implode(', ', $fields);
-		$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions .')';
+		if ($foreignFields) {
+			$foreignKeysString = ', INDEX ('. implode(', ', $indexes) .')';
+			foreach ($foreignFields as $field => $table) {
+				$foreignKeysString .= ', FOREIGN KEY ('. $field .') REFERENCES '. $table .' (id)';
+				$foreignKeysString .= ' ON DELETE CASCADE ON UPDATE CASCADE';
+			}
+		}
+		$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions . $foreignKeysString .') ENGINE=INNODB';
 		return Database::Query($query) ? true : false;
 	}
 

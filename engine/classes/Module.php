@@ -214,20 +214,27 @@ class Module {
 		global $_JAG;
 		
 		// Make sure table has not already been installed
-		if (Query::SingleValue('_modules', 'id', "name = '". $this->name ."'")) {
-			trigger_error('Module is already installed', E_USER_WARNING);
-			return false;
+		if ($installedModules = Query::SimpleResults('_modules')) {
+			$_JAG['installedModules'] = $installedModules;
+			if (in_array($this->name, $_JAG['installedModules'])) {
+				return false;
+			}
 		}
 		
 		// Determine whether we need a table at all
 		if ($this->schema) {
-			// Split fields between main table and localized table
 			foreach ($this->schema as $name => $info) {
-				// Find fields identified as "localizable"
+				// Split fields between main table and localized table
 				if ($info['localizable']) {
 					$localizedTableSchema[$name] = $info;
 				} else {
 					$mainTableSchema[$name] = $info;
+				}
+				
+				// Check whether we need to install other modules first
+				if (($relatedModule = $info['relatedModule']) && !in_array($this->name, $_JAG['installedModules'])) {
+					$module = Module::GetNewModule($relatedModule);
+					$module->Install();
 				}
 			}
 			
@@ -237,6 +244,7 @@ class Module {
 					trigger_error("Couldn't create table for module ". $this->name, E_USER_ERROR);
 					return false;
 				}
+				
 				// If localized fields were found, we need a localized table
 				if ($localizedTableSchema) {
 					$baseFields = IniFile::Parse('engine/database/localizedTableFields.ini', true);

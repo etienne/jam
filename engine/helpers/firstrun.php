@@ -25,9 +25,7 @@ $requiredModules = array(
 );
 foreach ($requiredModules as $moduleName) {
 	$module = Module::GetNewModule($moduleName);
-	if (!$module->Install()) {
-		trigger_error("Couldn't install module ". $module->name, E_USER_ERROR);
-	}
+	$module->Install();
 }
 
 // Add default admin user
