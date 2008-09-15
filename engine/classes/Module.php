@@ -19,6 +19,7 @@ class Module {
 
 	var $modulePath;
 	var $keyFieldName;
+
 	var $hasFiles;
 	var $hasMulti;
 	var $hasLocalizedFields;
@@ -60,7 +61,9 @@ class Module {
 	
 	function GetNewModule($name, $item = '', $hasParent = false) {
 		global $_JAG;
-		if (!$_JAG['availableModules'][$name]) trigger_error("Couldn't create new module because '". $name ."' module does not exist", E_USER_ERROR);
+		if (!$_JAG['availableModules'][$name]) {
+			trigger_error("Couldn't create new module because '". $name ."' module does not exist", E_USER_ERROR);
+		}
 		$className = $name .'Module';
 		$classPath = 'modules/'. $name .'/'. $className .'.php';
 		if (Filesystem::FileExistsInIncludePath($classPath)) {
@@ -145,6 +148,17 @@ class Module {
 		$this->config = IniFile::Parse($this->modulePath .'config/config.ini', true);
 		$this->strings = IniFile::Parse($this->modulePath .'strings/'. $_JAG['language'] .'.ini', true);
 		
+		// Check whether we should disable cache
+		if ($this->config['disableCache']) {
+			$_JAG['cache']->Forbid();
+		}
+		
+		// Determine template if we're the root module
+		// FIXME: this shouldn't work for non-root modules
+		if ($this->config['template']) {
+			$_JAG['template'] = $this->config['template'];
+		}
+		
 		// Get info for this module's table, if there is one
 		if ($schema = IniFile::Parse($this->modulePath .'config/table.ini', true)) {
 			
@@ -204,7 +218,7 @@ class Module {
 
 			// Run initialization method if one was defined
 			if (method_exists($this, 'Initialize')) {
-				$this->Initialize();
+				if ($this->Initialize() == false) return false;
 			}
 		}
 		
@@ -289,7 +303,16 @@ class Module {
 		}
 		
 	}
-
+	
+	function CanView() {
+		global $_JAG;
+		if ($requiredStatus = $this->config['canView']) {
+			return $_JAG['user']->HasPrivilege($requiredStatus);
+		} else {
+			return true;
+		}
+	}
+	
 	function NestModule($name, $item = '') {
 		$module = Module::GetNewModule($name, $item, true);
 		$module->AttachParent($this);
@@ -309,15 +332,23 @@ class Module {
 	function FetchItem($id) {
 		global $_JAG;
 		
+		if ($this->config['keepVersions']) {
+			$where = '('. $this->name .'.master = '. $id .' OR '.
+				$this->name .'.id = '. $id .' AND '. $this->name .'.master IS NULL)';
+		} else {
+			$where = $this->name .'.id = '. $id; 
+		}
+		
 		$params = array(
-			'where' => ($this->config['keepVersions'] ? $this->name . '.master' : $this->name . '.id') .' = '. $id,
+			'where' => $where,
 			'limit' => 1
 		);
 		
 		foreach($this->schema as $name => $info) {
+			// Add all fields to query
 			$params['fields'][$name] = $name;
 		}
-		
+
 		if ($items = $this->FetchItems($params)) {
 			$this->itemID = $id;
 			return $this->item = current($items);
@@ -410,9 +441,11 @@ class Module {
 		);
 		$query->AddJoin($this->name, $joinTable, $joinConditions);
 		
+		// Debug query:
+		// dp($query->GetQueryString());
+		
 		// Fetch actual module data
 		if ($dataArray = $query->GetArray()) {
-			
 			// Keep raw data from database
 			$this->rawData = $dataArray;
 			
@@ -447,6 +480,7 @@ class Module {
 								break;
 							case 'datetime':
 							case 'timestamp':
+							case 'date':
 								$dataArray[$id][$name] = new Date($data[$name]);
 								break;
 							case 'file':
@@ -470,11 +504,7 @@ class Module {
 	}
 	
 	function LoadData($data) {
-		if ($this->itemID) {
-			return $this->item = $data;
-		} else {
-			return false;
-		}
+		return $this->item = $data;
 	}
 	
 	function Display() {
@@ -689,6 +719,7 @@ class Module {
 					break;
 				case 'datetime':
 				case 'timestamp':
+				case 'date':
 					// Reassemble datetime elements into a single string
 					if (isset($_POST[$field .'_year'])) {
 						$date['year'] = $_POST[$field .'_year'];
@@ -1063,8 +1094,12 @@ class Module {
 			}
 			// Eventually, delete from _relationships where frommodule = this module
 		} else {
-			trigger_error("Couldn't delete module item from database", E_USER_ERROR);
-			return false;
+			if (Database::GetErrorNumber() == 1451) {
+				return ERROR_FOREIGN_KEY_CONSTRAINT;
+			} else {
+				trigger_error("Couldn't delete module item from database", E_USER_ERROR);
+				return false;
+			}
 		}
 	}
 	

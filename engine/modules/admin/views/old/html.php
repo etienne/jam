@@ -1,5 +1,5 @@
 <h2><?= $_JAG['strings']['admin']['oldVersions'] ?></h2>
-<ul>
+<ul class="versions">
 <? foreach ($paths as $path): ?>
 	<li><?= $path ?></li>
 <? endforeach; ?>

@@ -5,27 +5,6 @@ class AdminModule extends Module {
 	function Initialize() {
 		global $_JAG;
 		
-		$_JAG['template'] = 'admin';
-		
-		// Don't cache admin pages
-		$_JAG['cache']->Forbid();
-		
-		// Verify user privileges before doing anything
-		if (!$_JAG['user']->IsWebmaster()) {
-			$_JAG['user']->Connect();
-			return false;
-		}
-		
-		// Logout if requested
-		if ($_GET['a'] == 'logout') {
-			if ($_JAG['user']->Logout()) {
-				// Go to root
-				HTTP::RedirectLocal();
-			} else {
-				trigger_error("Couldn't log out", E_USER_ERROR);
-			}
-		}
-		
 		// Install modules that require installation
 		$modulesInstalled = false;
 		foreach ($_JAG['availableModules'] as $moduleName) {
@@ -45,6 +24,7 @@ class AdminModule extends Module {
 			HTTP::ReloadCurrentURL();
 		}
 		
+		return true;
 	}
 	
 	function Display() {
@@ -67,8 +47,13 @@ class AdminModule extends Module {
 	function DeleteAction($module) {
 		if ($_POST['delete']) {
 			// Delete
-			if ($module->DeleteItem($_POST['master'])) {
+			$deleteResult = $module->DeleteItem($_POST['master']);
+			if ($deleteResult === true) {
 				HTTP::ReloadCurrentURL('?m=deleted');
+				break;
+			} elseif ($deleteResult == ERROR_FOREIGN_KEY_CONSTRAINT) {
+				HTTP::ReloadCurrentURL('?m=errorForeignKey');
+				break;
 			}
 		} else {
 			// Cancel; go back to previous versions list
@@ -83,8 +68,8 @@ class AdminModule extends Module {
 				HTTP::ReloadCurrentURL('?a=edit&id='. $_POST['master']);
 			}
 		} else {
-			// Cancel; go back to previous versions list
-			HTTP::ReloadCurrentURL('?a=old&id='. $_POST['master']);
+			// Cancel; go back to item form
+			HTTP::ReloadCurrentURL('?a=edit&id='. $_POST['master']);
 		}
 	}
 	

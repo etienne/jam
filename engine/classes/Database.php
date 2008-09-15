@@ -1,4 +1,4 @@
-<?
+<?php
 
 class Database {
 
@@ -124,7 +124,7 @@ class Database {
 			$foreignKeysString = ', INDEX ('. implode(', ', $indexes) .')';
 			foreach ($foreignFields as $field => $table) {
 				$foreignKeysString .= ', FOREIGN KEY ('. $field .') REFERENCES '. $table .' (id)';
-				$foreignKeysString .= ' ON DELETE CASCADE ON UPDATE CASCADE';
+				$foreignKeysString .= ' ON DELETE RESTRICT ON UPDATE CASCADE';
 			}
 		}
 		$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions . $foreignKeysString .') ENGINE=INNODB';

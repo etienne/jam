@@ -293,7 +293,7 @@ class Query {
 		/* Wrapper for mysql_num_rows() */
 		return mysql_num_rows($this->GetResult());
 	}
-
+	
 	function GetPrimaryKeyColumn() {
 		if ($result = $this->GetResult()) {
 			while ($fieldInfo = mysql_fetch_field($this->GetResult())) {

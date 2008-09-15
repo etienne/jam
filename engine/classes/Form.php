@@ -172,7 +172,7 @@ class Form {
 		return $this->Select($name, $array, $title, true, $forbid);
 	}
 
-	function Datetime($name, $title) {
+	function Datetime($name, $title, $showTime = true) {
 		global $_JAG;
 
 		// If we already have a date in $this->values, use that, otherwise use current time
@@ -197,7 +197,9 @@ class Form {
 		$string .= $this->Field($name .'_year', 4);
 		
 		// Time
-		$string .= ' '. $this->Popup($name .'_hour', $hoursArray) .':'. $this->Popup($name .'_minutes', $minutesArray);
+		if ($showTime) {
+			$string .= ' '. $this->Popup($name .'_hour', $hoursArray) .':'. $this->Popup($name .'_minutes', $minutesArray);
+		}
 		
 		return $this->Item($name, $string, $title);
 	}

@@ -23,8 +23,13 @@ class ModuleForm extends Form {
 				$cleanArray[$key] = stripslashes($data);
 			}
 			$this->LoadValues($cleanArray);
-		} elseif ($this->module->rawData[$this->module->itemID]) {
-			$this->LoadValues($this->module->rawData[$this->module->itemID]);
+		} else {
+			$itemID = $this->module->item['id'] ? $this->module->item['id'] : $this->module->itemID;
+			if ($this->module->rawData) {
+				$this->LoadValues($this->module->rawData[$itemID]);
+			} elseif ($this->module->item) {
+				$this->LoadValues($this->module->item);
+			}
 		}
 		
 		// Load missing fields into form and display error, if applicable
@@ -88,17 +93,17 @@ class ModuleForm extends Form {
 		global $_JAG;
 		
 		$info = $this->module->schema[$name];
-
+		
 		// Look for default value if this item has no value
 		if (!isset($this->values[$name]) && isset($info['default'])) {
 			$this->LoadValue($name, $info['default']);
 		}
-
+		
 		// Use hidden field when 'hidden' value is true
 		if ($info['hidden']) {
 			return $form->Hidden($name);
 		}
-
+		
 		switch ($info['type']) {
 			case 'string':
 				return $this->Field($name, 40, $title);
@@ -144,6 +149,9 @@ class ModuleForm extends Form {
 			case 'timestamp':
 			case 'datetime':
 				return $this->Datetime($name, $title);
+				break;
+			case 'date':
+				return $this->Datetime($name, $title, false);
 				break;
 			case 'bool':
 				return $this->Checkbox($name, $title);

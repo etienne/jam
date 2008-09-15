@@ -17,6 +17,12 @@ class User {
 	var $id;
 	var $name;
 	var $status = 0;  // Guest access by default
+	var $classes = array(
+		'guest' => 0,
+		'user' => 1,
+		'webmaster' => 2,
+		'admin' => 3
+	);
 	
 	/*
 	 * Constructor
@@ -25,11 +31,27 @@ class User {
 	function User() {
 		$id = $this->DecodeID($_COOKIE['id']);
 		$this->FetchData($id);
+		
+		// Logout if requested
+		if ($_GET['a'] == 'logout') {
+			if (!$this->Logout()) {
+				trigger_error("Couldn't log out", E_USER_ERROR);
+			}
+		}
+		
 	}
 	
 	/*
 	 * Public
 	 */
+	
+	function HasPrivilege($class) {
+		if ($this->classes[$class] && $this->status >= $this->classes[$class]) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
 	function IsLoggedIn() {
 		return ($this->status > 0) ? true: false;
@@ -96,6 +118,7 @@ class User {
 	
 	function Logout() {
 		if (Cookie::Delete('id')) {
+			HTTP::RedirectLocal();
 			return true;
 		} else {
 			return false;
