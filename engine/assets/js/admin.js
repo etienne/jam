@@ -47,9 +47,9 @@ $(document).ready(function(){
 	
 	$('input.search').keyup(filterList);
 	
- 	function updateFields() {
+ 	function updateFieldVisibility() {
 		$('.hidden').css("display", "none");
-		$('select').each(function() {
+		$(':selected, :checked').each(function() {
 			targetDiv = $('.' + $(this).attr('name') + $(this).val())
 			if (targetDiv.length > 0) {
 				targetDiv.css("display", "block");
@@ -57,10 +57,10 @@ $(document).ready(function(){
 		})
 	}
 
-	$('select').change(function() {
-		updateFields();
+	$('select, :checkbox').change(function() {
+		updateFieldVisibility();
 	})
 	
-	updateFields();
+	updateFieldVisibility();
 	
 });
