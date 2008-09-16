@@ -36,6 +36,7 @@ strong {
 
 h2 {
 	font-weight: bold;
+	margin-bottom: 10px;
 }
 
 dt {
@@ -63,6 +64,14 @@ div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUplo
 	float: left;
 	font-size: 15px;
 	color: #d10;
+}
+
+p.disabled {
+	color: #d6d6d6;
+	font-size: 13px;
+	padding: 5px 0;
+	margin: 0 0 20px;
+	font-weight: bold;
 }
 
 p.notice {
@@ -227,7 +236,7 @@ ul.actions a:hover {
 	color: white;
 }
 
-/* Lists
+/* Versions list
    --------------------------------------------------
 */
 
@@ -247,7 +256,7 @@ ul.versions li a {
 }
 
 ul.versions li a:hover {
-	background-color: #d10;
+	background-color: #333;
 	color: white;
 	padding: 3px 10px;
 	margin: 0 -10px;

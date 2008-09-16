@@ -54,7 +54,9 @@
 				<?= $key == 0 ? a($editLinkPrefix . ($item['master'] ? $item['master'] : $item['id']), $label) : $label ?>
 			</td>
 			<? endforeach; ?>
+			<? if ($this->CanDelete()): ?>
 			<td class="delete"><?= a('admin/'. $this->name .'?a=delete&amp;id='. $item['id'], $_JAG['strings']['admin']['delete']) ?></td>
+			<? endif; ?>
 		</tr>
 	<? endforeach; ?>
 	</tbody>

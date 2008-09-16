@@ -65,18 +65,23 @@ class Form {
 		return ($this->invalid = $fields) ? true : false;
 	}
 
-	function Item($name, $item, $title = '') {
+	function Item($name, $item, $title = '', $class = '') {
 		// If we supply a title, generate <label/> tag
 		if ($title) {
-			$label = e('label', array('for' => 'form_'. $name), $title);
-			$itemDiv = e('div', $item);
+			$itemString = e('label', array('for' => 'form_'. $name), $title);
+			$itemString .= e('div', $item);
+			if ($class) $classesArray[] = $class;
 			// Look for missing or invalid items
 			if (in_array($name, $this->missing)) {
-				$string = e('div', array('class' => 'missing'), $label . $itemDiv);
+				$classesArray[] = 'missing';
 			} elseif (in_array($name, $this->invalid)) {
-				$string = e('div', array('class' => 'invalid'), $label . $itemDiv);
+				$classesArray[] = 'invalid';
+			}
+			if ($classesArray) {
+				$classesString = implode(' ', $classesArray);
+				$string = e('div', array('class' => $classesString), $itemString);
 			} else {
-				$string = e('div', $label . $itemDiv);
+				$string = e('div', $itemString);
 			}
 		} else {
 			// No title means no label and no div

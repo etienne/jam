@@ -9,7 +9,9 @@
 <? if ($this->config['keepVersions'] && $this->item['master']): ?>
 	<li id="versions"><?= a('admin/'. $this->name .'?a=old&id='. $this->itemID, $_JAG['strings']['admin']['revertLink']) ?></li>
 <? endif; ?>
+<? if ($this->CanDelete()): ?>
 	<li><?= a('admin/'. $this->name .'?a=delete&id='. $this->itemID, $_JAG['strings']['admin']['delete']) ?></li>
+<? endif; ?>
 </ul>
 
 <? $this->LoadView('form') ?>

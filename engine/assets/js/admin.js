@@ -46,4 +46,21 @@ $(document).ready(function(){
 	}
 	
 	$('input.search').keyup(filterList);
+	
+ 	function updateFields() {
+		$('.hidden').css("display", "none");
+		$('select').each(function() {
+			targetDiv = $('.' + $(this).attr('name') + $(this).val())
+			if (targetDiv.length > 0) {
+				targetDiv.css("display", "block");
+			}
+		})
+	}
+
+	$('select').change(function() {
+		updateFields();
+	})
+	
+	updateFields();
+	
 });

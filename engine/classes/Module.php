@@ -105,6 +105,10 @@ class Module {
 		$config = Module::ParseConfigFile($module, 'config/config.ini');
 		$strings = Module::ParseConfigFile($module, 'strings/'. $_JAG['language'] .'.ini');
 		if ($config['hideFromAdmin']) {
+			// Module asks not to show up in menu
+			return false;
+		} elseif ($config['canView'] && !$_JAG['user']->HasPrivilege($config['canView'])) {
+			// User doesn't have sufficient privileges to view the module
 			return false;
 		} elseif ($string = $strings['adminTitle']) {
 			return $string;
@@ -160,7 +164,7 @@ class Module {
 		}
 		
 		// Get info for this module's table, if there is one
-		if ($schema = IniFile::Parse($this->modulePath .'config/table.ini', true)) {
+		if ($schema = IniFile::Parse($this->modulePath .'config/schema.ini', true)) {
 			
 			// Determine key field
 			if (!$this->keyFieldName = $this->config['keyField']) {
@@ -246,7 +250,11 @@ class Module {
 				}
 				
 				// Check whether we need to install other modules first
-				if (($relatedModule = $info['relatedModule']) && !in_array($this->name, $_JAG['installedModules'])) {
+				if (
+					($relatedModule = $info['relatedModule']) &&
+					!in_array($this->name, $_JAG['installedModules']) &&
+					$relatedModule != $this->name
+				) {
 					$module = Module::GetNewModule($relatedModule);
 					$module->Install();
 				}
@@ -306,8 +314,26 @@ class Module {
 	
 	function CanView() {
 		global $_JAG;
-		if ($requiredStatus = $this->config['canView']) {
-			return $_JAG['user']->HasPrivilege($requiredStatus);
+		if ($this->config['canView']) {
+			return $_JAG['user']->HasPrivilege($this->config['canView']);
+		} else {
+			return true;
+		}
+	}
+	
+	function CanInsert() {
+		global $_JAG;
+		if ($this->config['canInsert']) {
+			return $_JAG['user']->HasPrivilege($this->config['canInsert']);
+		} else {
+			return true;
+		}
+	}
+	
+	function CanDelete() {
+		global $_JAG;
+		if ($this->config['canDelete']) {
+			return $_JAG['user']->HasPrivilege($this->config['canDelete']);
 		} else {
 			return true;
 		}
@@ -415,7 +441,7 @@ class Module {
 					$relatedModule != 'users' &&
 					$relatedModule != $this->name
 				) {
-					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/table.ini', true);
+					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/schema.ini', true);
 					foreach($relatedModuleSchema as $foreignName => $foreignInfo) {
 						$fields[$name .'_'. $foreignName] = $relatedModule .'.'. $foreignName;
 					}
@@ -516,6 +542,11 @@ class Module {
 	function LoadView($view) {
 		global $_JAG;
 		
+		// Make sure we have sufficient privileges
+		if (!$this->CanView()) {
+			return false;
+		}
+
 		if (!$view) return false;
 		
 		// Get parent module's name
@@ -582,17 +613,18 @@ class Module {
 	function GetRelatedArray($field) {
 		if ($relatedModule = $this->schema[$field]['relatedModule']) {
 
+			$relatedModuleConfig = Module::ParseConfigFile($relatedModule, 'config/config.ini', true);
+
 			// Look for keyQuery.ini
 			if ($relatedQueryParams = Module::ParseConfigFile($relatedModule, 'config/keyQuery.ini', true)) {
 
 				// Fetch array using specified query
 				$relatedQuery = new Query($relatedQueryParams);
-
+				
 			} else {
-				$relatedModuleConfig = Module::ParseConfigFile($relatedModule, 'config/config.ini', true);
 				if (!$keyField = $relatedModuleConfig['keyField']) {
 					// If no key field was specified in config file, use first field
-					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/table.ini', true);
+					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/schema.ini', true);
 					reset($relatedModuleSchema);
 					$keyField = key($relatedModuleSchema);
 				}
@@ -608,6 +640,12 @@ class Module {
 			// If we successfuly built a query, fetch data
 			if ($relatedQuery) {
 				$relatedQuery->AddFrom($relatedModule);
+				
+				// Manage versions
+				if ($relatedModuleConfig['keepVersions']) {
+					$relatedQuery->AddWhere($relatedModule .'.current = TRUE');
+				}
+				
 				return $relatedQuery->GetSimpleArray();
 			}
 			
@@ -698,6 +736,15 @@ class Module {
 	}
 
 	function ValidateData() {
+		// First check whether we have sufficient privileges to insert
+		if (!$_POST['master']) {
+			// We're inserting, not updating
+			if (!$this->CanInsert()) {
+				trigger_error("Insufficient privileges to insert into module ". $this->name, E_USER_ERROR);
+				return false;
+			}
+		}
+		
 		// Get data from $_POST and make sure required data is present
 		foreach ($this->schema as $field => $info) {
 			// Collect data from $_POST
@@ -1078,6 +1125,12 @@ class Module {
 	}
 	
 	function DeleteItem($master) {
+		// First make sure we have sufficient privileges
+		if ($this->CanDelete()) {
+			trigger_error("Insufficient privileges to delete from module ". $this->name, E_USER_ERROR);
+			return false;
+		}
+		
 		// Delete item
 		if ($this->config['keepVersions']) {
 			$where = 'id = '. $master .' OR master = '. $master;

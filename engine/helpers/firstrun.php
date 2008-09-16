@@ -31,6 +31,7 @@ foreach ($requiredModules as $moduleName) {
 // Add default admin user
 if (Query::TableIsEmpty('users')) {
 	$adminUserParams = array(
+		'created' => $_JAG['databaseTime'],
 		'login' => 'admin',
 		'name' => 'Admin',
 		'password' => 'admin',

@@ -89,6 +89,19 @@ class ModuleForm extends Form {
 		return true;
 	}
 	
+	function Item($name, $item, $title = '') {
+		// Some items should have a specific class
+		if ($showIfArray = $this->module->schema[$name]['showIf']) {
+			$field = $showIfArray[0];
+			$value = $showIfArray[1];
+			// Check whether it is a valid field
+			if ($this->module->schema[$field]) {
+				$class = 'hidden '. $field . $value;
+			}
+		}
+		return Parent::Item($name, $item, $title, $class);
+	}
+	
 	function AutoItem($name, $title = '') {
 		global $_JAG;
 		
