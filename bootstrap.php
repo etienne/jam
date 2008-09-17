@@ -62,6 +62,7 @@ $_JAG['server'] = IniFile::Parse('app/config/server.ini', true);
 
 // Define constants
 define('ROOT', $_JAG['server']['root']);
+define('ERROR_FOREIGN_KEY_CONSTRAINT', 2); // Used in engine/classes/Module.php
 
 // Load database field types
 $_JAG['fieldTypes'] = IniFile::Parse('engine/database/types.ini');
@@ -117,6 +118,11 @@ preg_match('|^'. ROOT .'(.*)$|', $fullRequest, $requestArray);
 // Use requested URL, or use root path if none was requested
 $_JAG['request'] = $requestArray[1] ? $requestArray[1] : $_JAG['project']['rootPath'];
 
+// We sync using database time (might differ from PHP time)
+$databaseTimeQuery = new Query(array('fields' => 'NOW()'));
+$databaseTime = $databaseTimeQuery->GetSingleValue();
+$_JAG['databaseTime'] = $databaseTime;
+
 // Make sure everything is properly initialized
 $tables = Database::GetTables();
 if (!$tables['users'] || !$tables['_paths']) {
@@ -125,11 +131,6 @@ if (!$tables['users'] || !$tables['_paths']) {
 
 // Get installed modules list
 $_JAG['installedModules'] = Query::SimpleResults('_modules');
-
-// We sync using database time (might differ from PHP time)
-$databaseTimeQuery = new Query(array('fields' => 'NOW()'));
-$databaseTime = $databaseTimeQuery->GetSingleValue();
-$_JAG['databaseTime'] = $databaseTime;
 
 // Create User object
 $_JAG['user'] = new User();
@@ -155,9 +156,10 @@ if ($path = $_JAG['paths'][$_JAG['request']]) {
 		// This is a valid path; proceed to module
 		$_JAG['rootModuleName'] = $_JAG['installedModules'][$path['module']];
 		if ($_JAG['rootModule'] = Module::GetNewModule($_JAG['rootModuleName'], $path['item'])) {
-			$_JAG['rootModule']->Display();
-			// If user has enough privileges, determine path to admin pane for this item
-			if ($_JAG['user']->IsWebmaster()) {
+			// Check whether we have sufficient privileges to display the module
+			if ($_JAG['rootModule']->CanView()) {
+				$_JAG['rootModule']->Display();
+				// Determine path to admin pane for this item
 				$adminPath = 'admin/'. $moduleName;
 				if ($_JAG['paths'][$adminPath]) {
 					if ($path['item']) {
@@ -167,6 +169,9 @@ if ($path = $_JAG['paths'][$_JAG['request']]) {
 				} else {
 					$_JAG['adminPath'] = ROOT . 'admin';
 				}
+			} else {
+				// Display login if we don't
+				$_JAG['user']->Connect();
 			}
 		} else {
 			trigger_error("Couldn't load root module", E_USER_ERROR);
@@ -192,9 +197,22 @@ if ($path = $_JAG['paths'][$_JAG['request']]) {
 $_JAG['body'] = ob_get_contents();
 ob_end_clean();
 
+// Determine mode; default is HTML
+if (!$_JAG['mode']) {
+	$_JAG['mode'] = 'html';
+}
+
+// Determine template
+if ($_JAG['mode'] == 'html') {
+	// If we're in HTML mode and no template was specified, use HTML
+	if (!$_JAG['template']) $_JAG['template'] = 'html';
+} else {
+	// We're not in HTML mode; use mode as template
+	$_JAG['template'] = $_JAG['mode'];
+}
+
 // Load template
-$_JAG['mode'] = $_JAG['mode'] ? $_JAG['mode'] : 'html';
-$templateFile = 'templates/'. ($_JAG['template'] ? $_JAG['template'] : ($_JAG['mode'] ? $_JAG['mode'] : 'html')) .'.php';
+$templateFile = 'templates/'. $_JAG['template'] .'.php';
 if (Filesystem::FileExistsInIncludePath($templateFile)) {
 	require $templateFile;
 }
