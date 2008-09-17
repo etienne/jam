@@ -49,7 +49,7 @@ $(document).ready(function(){
 	
  	function updateFieldVisibility() {
 		$('.hidden').css("display", "none");
-		$(':selected, :checked').each(function() {
+		$('select, :checked').each(function() {
 			targetDiv = $('.' + $(this).attr('name') + $(this).val())
 			if (targetDiv.length > 0) {
 				targetDiv.css("display", "block");
