@@ -319,7 +319,8 @@ class Query {
 		
 		// Make sure we have exactly two fields
 		if (mysql_num_fields($this->GetResult()) != 2) {
-			echo $this->GetQueryString();
+			dp($this->GetQueryString());
+			dp();
 			trigger_error('Query::GetSimpleArray() requires a query with exactly two fields', E_USER_WARNING);
 			return false;
 		}
@@ -350,7 +351,7 @@ class Query {
 				} else {
 					$returnArray[] = $array;
 				}
-			} 
+			}
 			return $returnArray;
 		} else {
 			return false;

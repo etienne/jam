@@ -27,6 +27,19 @@ $(document).ready(function(){
 		}
 	);
 	
+	// Make certain rows sortable
+	$('table.sortable tr').sortable({'axis' : 'y'});
+	
+	/*
+	// FCKEditor
+	if ($('textarea.wysiwyg').length > 0) {
+		$('textarea.wysiwyg').attr('id', 'wysiwyg').parents('div').width('560px');
+		var oFCKeditor = new FCKeditor('wysiwyg');
+		oFCKeditor.BasePath = "/qs/trunk/assets/js/fckeditor/";
+		oFCKeditor.ReplaceTextarea() ;
+	}*/
+	
+	
 	// Add new selector for case-insensitive :contains(); code by Erik Beeson
 	jQuery.extend(jQuery.expr[':'], {
 		containsIgnoreCase: "(a.textContent||a.innerText||jQuery(a).text()||'').toLowerCase().indexOf((m[3]||'').toLowerCase())>=0"
@@ -48,11 +61,11 @@ $(document).ready(function(){
 	$('input.search').keyup(filterList);
 	
  	function updateFieldVisibility() {
-		$('.hidden').css("display", "none");
+		$('.hidden').hide();
 		$('select, :checked').each(function() {
 			targetDiv = $('.' + $(this).attr('name') + $(this).val())
 			if (targetDiv.length > 0) {
-				targetDiv.css("display", "block");
+				targetDiv.show();
 			}
 		})
 	}

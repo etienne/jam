@@ -159,6 +159,10 @@ if ($path = $_JAG['paths'][$_JAG['request']]) {
 			// Check whether we have sufficient privileges to display the module
 			if ($_JAG['rootModule']->CanView()) {
 				$_JAG['rootModule']->Display();
+				
+				// Display super views, only for root module
+				$_JAG['rootModule']->DisplaySuperViews();
+				
 				// Determine path to admin pane for this item
 				$adminPath = 'admin/'. $moduleName;
 				if ($_JAG['paths'][$adminPath]) {

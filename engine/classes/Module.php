@@ -80,7 +80,6 @@ class Module {
 		if (!$hasParent) {
 			$module->FinishSetup();
 		}
-		
 		return $module;
 	}
 	
@@ -107,6 +106,9 @@ class Module {
 		if ($config['hideFromAdmin']) {
 			// Module asks not to show up in menu
 			return false;
+		} elseif ($module == 'users' && $_JAG['project']['singleUser']) {
+			// Project is single-user, and we don't want the "users" module to show up in the admin interface
+			return false;
 		} elseif ($config['canView'] && !$_JAG['user']->HasPrivilege($config['canView'])) {
 			// User doesn't have sufficient privileges to view the module
 			return false;
@@ -119,16 +121,20 @@ class Module {
 	
 	function InsertTableNames ($array, $oldName, $newName) {
 		// Recursive function to process custom parameters
-		foreach ($array as $key => $value) {
-			if (is_string($value)) {
-				$returnArray[$key] = preg_replace('/^'. $oldName .'$/', $newName, $value);
-			} elseif (is_array($value)) {
-				$returnArray[$key] = Module::InsertTableNames($value, $oldName, $newName);
-			} else  {
-				$returnArray[$key] = $value;
+		if ($array) {
+			foreach ($array as $key => $value) {
+				if (is_string($value)) {
+					$returnArray[$key] = preg_replace('/^'. $oldName .'$/', $newName, $value);
+				} elseif (is_array($value)) {
+					$returnArray[$key] = Module::InsertTableNames($value, $oldName, $newName);
+				} else  {
+					$returnArray[$key] = $value;
+				}
 			}
+			return $returnArray;
+		} else {
+			return false;
 		}
-		return $returnArray;
 	}
 	
 	
@@ -235,7 +241,7 @@ class Module {
 		if ($installedModules = Query::SimpleResults('_modules')) {
 			$_JAG['installedModules'] = $installedModules;
 			if (in_array($this->name, $_JAG['installedModules'])) {
-				return false;
+				return true;
 			}
 		}
 		
@@ -458,50 +464,65 @@ class Module {
 		$query->LoadParameters($queryParams);
 		
 		// Load paths if appropriate
-		$query->AddFields(array('path' => '_paths.path'));
-		$joinTable = '_paths';
-		$joinConditions = array(
-			'_paths.module = '. $this->moduleID,
-			'_paths.current = 1',
-			'_paths.item = '. $this->name . ($this->config['keepVersions'] ? '.master' : '.id')
-		);
-		$query->AddJoin($this->name, $joinTable, $joinConditions);
+		if ($this->config['autoPaths'] || (get_parent_class($this) && method_exists($this, 'GetPath'))) {
+			$query->AddFields(array('path' => '_paths.path'));
+			$joinTable = '_paths';
+			$joinConditions[] = '_paths.module = '. $this->moduleID;
+			$joinConditions[] = '_paths.current = 1';
+			if ($this->config['keepVersions']) {
+				$joinConditions[] = '((_paths.item = '. $this->name .'.id AND '. $this->name .'.master IS NULL) OR '.
+				'_paths.item = '. $this->name .'.master)';
+			} else {
+				$joinConditions[] = '_paths.item = '. $this->name .'.id';
+			}
+			$query->AddJoin($this->name, $joinTable, $joinConditions);
+			if ($this->isLocalizable) {
+				$query->AddWhere($this->name . '_localized.language = _paths.language');
+			}
+		}
 		
 		// Debug query:
-		// dp($query->GetQueryString());
+	//	dp($query->GetQueryString());
 		
 		// Fetch actual module data
 		if ($dataArray = $query->GetArray()) {
-			// Keep raw data from database
-			$this->rawData = $dataArray;
 			
 			// Load data for 'multi' fields
 			if ($this->hasMulti) {
 				$where = 'frommodule = '. $this->moduleID;
-				$multiArray = Query::FullResults('_relationships', $where);
-				foreach($dataArray as $id => $item) {
-					foreach($multiArray as $multiData) {
-						if($multiData['fromid'] == $id) {
-							$dataArray[$id][$this->multiRelatedModules[$multiData['tomodule']]][] = $multiData['toid'];
+				if ($multiArray = Query::FullResults('_relationships', $where)) {
+					foreach($dataArray as $id => $item) {
+						foreach($multiArray as $multiData) {
+							if($multiData['fromid'] == $id) {
+								$dataArray[$id][$this->multiRelatedModules[$multiData['tomodule']]][] = $multiData['toid'];
+							}
 						}
 					}
 				}
 			}
 			
+			// Keep raw data from database (with data from multi fields)
+			$this->rawData = $dataArray;
+
 			// Post-process data
 			foreach($this->schema as $name => $info) {
 				foreach ($dataArray as $id => $data) {
 					if ($dataArray[$id][$name]) {
 						switch ($info['type']) {
 							case 'string':
+								$dataArray[$id][$name] = TextRenderer::SmartizeText($data[$name]);
+								break;
 							case 'text':
 							case 'shorttext':
-								if (strstr($data[$name], "\n") !== false) {
-									// String contains newline characters; format as multiline text
-									$dataArray[$id][$name] = TextRenderer::TextToHTML($data[$name]);
-								} else {
-									// String is a single line; format as single line
-									$dataArray[$id][$name] = TextRenderer::SmartizeText($data[$name]);
+								if (!$info['wysiwyg']) {
+									// Render text using TextRenderer if it's not a WYSIWYG field
+									if (strstr($data[$name], "\n") !== false) {
+										// String contains newline characters; format as multiline text
+										$dataArray[$id][$name] = TextRenderer::TextToHTML($data[$name]);
+									} else {
+										// String is a single line; format as single line
+										$dataArray[$id][$name] = TextRenderer::SmartizeText($data[$name]);
+									}
 								}
 								break;
 							case 'datetime':
@@ -516,7 +537,6 @@ class Module {
 					}
 				}
 			}
-			
 			if ($this->items) {
 				// If $this->items is already set, don't overwrite it
 				return $dataArray;
@@ -535,8 +555,39 @@ class Module {
 	
 	function Display() {
 		// Determine whether we're looking at a single item in the module
-		$view = $this->itemID ? 'item' : 'default';
-		return $this->LoadView($view) ? true : false;
+		if ($this->itemID) {
+			// Try to load the item view
+			if ($this->LoadView('item')) {
+				return true;
+			}
+		}
+		return $this->LoadView('default');
+	}
+	
+	function DisplaySuperViews() {
+		global $_JAG;
+		
+		// Get a list of super views (name starts with _)
+	 	if ($views = Filesystem::GetDirNames($this->modulePath .'/views')) {
+			foreach ($views as $view) {
+				if (substr($view, 0, 1) == '_') {
+					$superViews[] = $view;
+				}
+			}
+			
+			// Render each superview in its own output buffer, then store as an array in $_JAG['superviews']
+			if ($superViews) {
+				foreach ($superViews as $superView) {
+					// We don't want to use the '_' to refer to the superview in $_JAG['superviews]
+					$superViewCleanName = substr($superView, 1);
+					ob_start('mb_output_handler');
+					$this->LoadView($superView);
+					$_JAG['superviews'][$superViewCleanName] = ob_get_contents();
+					ob_end_clean();
+				}
+			}
+			
+		}		
 	}
 	
 	function LoadView($view) {
@@ -553,22 +604,31 @@ class Module {
 		$parentName = $this->parentModule->name;
 		
 		// Determine view
-		$viewPath = $this->modulePath .'views/'. ($parentName ? $parentName . '.' : '') . $view;
-		if ($_JAG['rootModuleName'] == 'admin') {
+		$viewDirPath = $this->modulePath .'views/';
+		if ($parentName) {
+			$nestedViewPath = $viewDirPath. $parentName .'.'. $view;
+		}
+		$viewPath = $viewDirPath . $view;
+		$defaultView = $viewDirPath .'default';
+		if ($parentName == 'admin') {
 			// If we're in admin mode, only try to load admin views, and only for the required module
 			$adminViewPath = 'engine/modules/admin/views/'. $view;
-			if (file_exists($viewPath) && $parentName == 'admin') {
-				$viewDir = $viewPath;
+			if (file_exists($nestedViewPath) && $parentName == 'admin') {
+				$viewDir = $nestedViewPath;
 			} elseif (file_exists($adminViewPath)) {
 				$viewDir = $adminViewPath;
 			}
 		} else {
 			// If we're not in admin mode, try to load a regular view
-			if (file_exists($viewPath)) {
+			if (file_exists($nestedViewPath)) {
+				$viewDir = $nestedViewPath;
+			} elseif (file_exists($viewPath)) {
 				$viewDir = $viewPath;
+			} elseif (file_exists($defaultView)) {
+				$viewDir = $defaultView;
 			}
 		}
-		
+
 		if (!$viewDir) {
 			return false;
 		}
@@ -632,7 +692,12 @@ class Module {
 				// If we do find a key field, build query according to that
 				if ($keyField) {
 					$params = array();
-					$params['fields'] = array('id', $keyField);
+					if ($relatedModuleConfig['keepVersions']) {
+						$params['fields']['id'] = 'IF(master IS NULL, id, master)';
+					} else {
+						$params['fields']['id'] = 'id';
+					}
+					$params['fields'][] = $keyField;
 					$relatedQuery = new Query($params);
 				}
 			}
@@ -645,7 +710,6 @@ class Module {
 				if ($relatedModuleConfig['keepVersions']) {
 					$relatedQuery->AddWhere($relatedModule .'.current = TRUE');
 				}
-				
 				return $relatedQuery->GetSimpleArray();
 			}
 			
@@ -699,6 +763,11 @@ class Module {
 			}
 		}
 		
+		// Include sortIndex field if applicable
+		if ($this->config['allowSort']) {
+			print $form->Field('sortIndex', '3', $_JAG['strings']['fields']['sortIndex']);
+		}
+		
 		foreach ($this->schema as $name => $info) {
 			// Don't include basic module fields
 			if (!$this->config['useCustomTable'] && $_JAG['moduleFields'][$name]) {
@@ -722,6 +791,28 @@ class Module {
 			}
 			
 			print $form->AutoItem($name, $title);
+		}
+		
+		// Display related modules
+		foreach ($_JAG['installedModules'] as $module) {
+			// First check whether we have a view configured for related module display
+			if (
+				($relatedModuleSchema = Module::ParseConfigFile($module, 'config/schema.ini', true)) &&
+				($relatedModuleKeyQuery = Module::ParseConfigFile($module, 'config/keyQuery.ini', true))
+			) {
+				foreach($relatedModuleSchema as $field => $info) {
+					if ($info['relatedModule'] == $this->name) {
+						$relatedModule = $this->parentModule->NestModule($module);
+						// Load all fields
+						$queryParams = array(
+							'fields' => $relatedModuleKeyQuery['fields'],
+							'where' => $module .'.'. $field .' = '. $this->itemID
+						);
+						$relatedModule->FetchItems($queryParams);
+						$relatedModule->LoadView('subform');
+					}
+				}
+			}
 		}
 		
 		if ($hiddenFields) {
@@ -862,9 +953,13 @@ class Module {
 
 		// Determine what we need to insert from what was submitted
 		foreach ($this->schema as $name => $info) {
+			// Omit fields which we can't edit
+			if ($info['canEdit'] && !$_JAG['user']->HasPrivilege($info['canEdit'])) {
+				continue;
+			}
+			
 			// Make sure data exists, and exclude 'multi' fields; we handle them later
 			if (isset($this->postData[$name]) && $info['type'] != 'multi') {
-				// TODO - Ajouter affaire persmissions write access, genre
 				if ($info['localizable']) {
 					$localizedData[$name] = $this->postData[$name];
 				} else {
@@ -960,10 +1055,19 @@ class Module {
 			$where = array('item = '. $insertID, "language = '". $localizedData['language'] ."'");
 			if (Database::Update($tableName, $localizedData, $where)) {
 				// Insert if no rows were affected
-				if (Database::GetAffectedRows() == 0) {
-					if (!Database::Insert($tableName, $localizedData)) {
+				if (Database::GetModifiedRows() == 0) {
+					if (Database::Insert($tableName, $localizedData)) {
+						$success = true;
+					} else {
 						trigger_error("Couldn't insert localized data for module ". $this->name, E_USER_ERROR);
 					}
+				} else {
+					$success = true;
+				}
+				
+				// Put data into module object to reflect changes in the database
+				if ($success) {
+					$this->LoadData($localizedData);
 				}
 			} else {
 				trigger_error("Couldn't update localized data for module ". $this->name, E_USER_ERROR);
@@ -1008,6 +1112,10 @@ class Module {
 						break;
 				}
 			}
+		}
+		
+		if (method_exists($this, 'PostProcessData')) {
+			$this->PostProcessData($insertID);
 		}
 		
 		// Check whether we need to redirect to a specific anchor
@@ -1081,10 +1189,12 @@ class Module {
 		// Update path for files
 		if ($this->files) {
 			foreach ($this->schema as $name => $info) {
-				$fileID = $this->item[$name]->itemID;
-				if ($info['type'] == 'file' && $fileID) {
-					if ($filePath = $this->files->GetPath($name)) {
-						if (!Path::Insert($filePath, $this->files->moduleID, $fileID, $safeInsert)) {
+				if ($info['type'] == 'file') {
+					if (!is_object($this->item[$name])) {
+						$this->item[$name] = $this->NestModule('files', $this->item[$name]);
+					}
+					if ($filePath = $this->item[$name]->GetPath($name)) {
+						if (!Path::Insert($filePath, $this->files->moduleID, $this->item[$name]->itemID, $safeInsert)) {
 							trigger_error("Couldn't insert path for file associated with field ". $name ." in module ". $this->name, E_USER_ERROR);
 						}
 					}
@@ -1126,7 +1236,7 @@ class Module {
 	
 	function DeleteItem($master) {
 		// First make sure we have sufficient privileges
-		if ($this->CanDelete()) {
+		if (!$this->CanDelete()) {
 			trigger_error("Insufficient privileges to delete from module ". $this->name, E_USER_ERROR);
 			return false;
 		}

@@ -36,8 +36,12 @@ class Database {
 		return mysql_insert_id();
 	}
 	
-	function GetAffectedRows () {
-		return mysql_affected_rows();
+	function GetModifiedRows () {
+		// Code lifted from http://ca3.php.net/manual/en/function.mysql-info.php#65118
+		$infoString = mysql_info();
+		$affectedRows = mysql_affected_rows();
+		ereg("Rows matched: ([0-9]*)", $infoString, $rowsMatched);
+		return ($affectedRows < 1) ? ($rowsMatched[1] ? $rowsMatched[1] : 0) : $affectedRows;
 	}
 	
 	function Insert ($table, $params) {
@@ -120,14 +124,20 @@ class Database {
 			}
 		}
 		$fieldDefinitions = implode(', ', $fields);
-		if ($foreignFields) {
-			$foreignKeysString = ', INDEX ('. implode(', ', $indexes) .')';
-			foreach ($foreignFields as $field => $table) {
-				$foreignKeysString .= ', FOREIGN KEY ('. $field .') REFERENCES '. $table .' (id)';
-				$foreignKeysString .= ' ON DELETE RESTRICT ON UPDATE CASCADE';
+		if ($_JAG['project']['databaseTableType'] == 'myisam') {
+			// Foreign keys are discarded for MyISAM tables
+			$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions .')';			
+		} else {
+			// Default is InnoDB
+			if ($foreignFields) {
+				$foreignKeysString = ', INDEX ('. implode(', ', $indexes) .')';
+				foreach ($foreignFields as $field => $table) {
+					$foreignKeysString .= ', FOREIGN KEY ('. $field .') REFERENCES '. $table .' (id)';
+					$foreignKeysString .= ' ON DELETE RESTRICT ON UPDATE CASCADE';
+				}
 			}
+			$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions . $foreignKeysString .') ENGINE=INNODB';
 		}
-		$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions . $foreignKeysString .') ENGINE=INNODB';
 		return Database::Query($query) ? true : false;
 	}
 

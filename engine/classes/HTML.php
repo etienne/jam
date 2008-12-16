@@ -39,7 +39,9 @@ class HTML {
 	}
 	
 	function Anchor ($url, $text, $attributes = false) {
-		if (!String::IsURL($url)) $url = ROOT . $url;
+		if (!String::IsURL($url) && strpos($url, '#') !== 0) {
+			$url = ROOT . $url;
+		}
 		$hrefAttribute = array('href' => $url);
 		if (is_array($attributes)) {
 			$mergedAttributes = $attributes + $hrefAttribute;
@@ -74,15 +76,10 @@ class HTML {
 		return HTML::Element('img', $attributes);
 	}
 	
-	function SWFObject($swf, $objectId, $containerId, $width, $height, $version, $bgcolor) {
+	function SWFObject($swf, $container, $width, $height, $version) {
 		$string = '
 			<script type="text/javascript">
-			// <![CDATA[
-				var so = new SWFObject("'. $swf .'", "'. $objectId .'", "'. $width .'", "'. $height .'", "'. $version .'", "'. $bgcolor .'");
-				so.useExpressInstall("'. ROOT . 'assets/media/expressinstall.swf");
-				so.addParam("wmode", "opaque");
-				so.write("'. $containerId .'");
-			// ]]>
+				swfobject.embedSWF("'. $swf .'", "'. $container .'", "'. $width .'", "'. $height .'", "'. $version .'");
 			</script>';
 		return $string;
 	}

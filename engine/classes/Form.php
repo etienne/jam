@@ -64,6 +64,10 @@ class Form {
 	function LoadInvalidFields($fields) {
 		return ($this->invalid = $fields) ? true : false;
 	}
+	
+	function FieldIsMissing($field) {
+		return in_array($field, $this->missing);
+	}
 
 	function Item($name, $item, $title = '', $class = '') {
 		// If we supply a title, generate <label/> tag
@@ -90,7 +94,7 @@ class Form {
 		return $string;
 	}
 
-	function Field($name, $width, $title = '', $height = 1) {
+	function Field($name, $width, $title = '', $height = 1, $class = '') {
 		if ($height == 1) {
 			// Single-line field is an <input/>
 			$params = array(
@@ -98,7 +102,8 @@ class Form {
 				'name' => $name,
 				'type' => 'text',
 				'size' => $width,
-				'maxlength' => 255
+				'maxlength' => 255,
+				'class' => $class
 			);
 			// Populate field with value
 			if (isset($this->values[$name])) {
@@ -112,7 +117,8 @@ class Form {
 				'id' => 'form_'. $name,
 				'name' => $name,
 				'rows' => $height,
-				'cols' => $width
+				'cols' => $width,
+				'class' => $class
 			);
 			$string = e('textarea', $params, $this->values[$name]);
 		}
@@ -131,12 +137,12 @@ class Form {
 		return $this->Item($name, $string, $title);
 	}
 	
-	function Checkbox ($name, $title = '') {
+	function Checkbox ($name, $title = '', $value = 1) {
 		$params = array(
 			'id' => 'form_'. $name,
 			'name' => $name,
 			'type' => 'checkbox',
-			'value' => 1,
+			'value' => $value
 		);
 		
 		if ($this->values[$name]) {
@@ -147,6 +153,22 @@ class Form {
 		return $this->Item($name, $string, $title);
 	}
 
+	function Radio($name, $value, $title = '') {
+		$params = array(
+			'id' => 'form_'. $name,
+			'name' => $name,
+			'type' => 'radio',
+			'value' => $value
+		);
+		
+		if ($this->values[$name] == $value) {
+			$params['checked'] = 'checked';
+		}
+		
+		$string = e('input', $params);
+		return $this->Item($name, $string, $title);
+	}
+	
 	function Select($name, $array, $title = '', $multiple = false, $forbid = '') {
 		if (!$forbid) $forbid = array();
 		foreach ($array as $key => $value) {
@@ -181,9 +203,14 @@ class Form {
 		global $_JAG;
 
 		// If we already have a date in $this->values, use that, otherwise use current time
-		if ($dateString = $this->values[$name] ? $this->values[$name] : $_JAG['databaseTime']) {
+		if ($date = $this->values[$name] ? $this->values[$name] : $_JAG['databaseTime']) {
+			// Create Date object if we don't already have one
+			$class = get_class($item[$field]);
+			if (!($class == 'Date' || $class == 'date')) {
+				$date = new Date($date);
+			}
+			
 			// Split it up so we can use it
-			$date = new Date($dateString);
 			$this->values[$name . '_year'] = $date->GetYear();
 			$this->values[$name . '_month'] = $date->GetMonth();
 			$this->values[$name . '_day'] = $date->GetDay();

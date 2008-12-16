@@ -8,6 +8,11 @@ if (!$fields = $this->config['adminListFields']) {
 	}
 }
 
+// Add sortIndex field if available
+if ($this->config['allowSort']) {
+	array_unshift($fields, 'sortIndex');
+}
+
 foreach ($fields as $field) {
 	if ($relatedArray = $this->GetRelatedArray($field)) {
 		$this->template['relatedArrays'][$field] = $relatedArray;

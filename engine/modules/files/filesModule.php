@@ -12,8 +12,10 @@ class FilesModule extends Module {
 		// Get file size
 		foreach ($this->items as $id => $item) {
 			$filePath = $_JAG['filesDirectory'] . $id;
-			if (!$item['filesize'] && $filesize = filesize($filePath)) {
-				$this->items[$id]['filesize'] = $filesize;
+			if (file_exists($filePath)) {
+				if (!$item['filesize'] && $filesize = filesize($filePath)) {
+					$this->items[$id]['filesize'] = $filesize;
+				}
 			}
 		}
 		
@@ -86,12 +88,16 @@ class FilesModule extends Module {
 	}
 	
 	function GetPath($field) {
+		global $_JAG;
+		$originalFilename = $this->item['filename'] ? $this->item['filename'] : $this->originalFilenames[$field];
 		if (method_exists($this->parentModule, 'GetFilePath')) {
 			return $this->parentModule->GetFilePath($field);
 		} elseif ($itemPath = $this->parentModule->item['path']) {
-			return $itemPath .'/'. $this->originalFilenames[$field];
+			return $itemPath .'/'. $originalFilename;
+		} elseif ($itemPath = $this->parentModule->config['path'][$_JAG['language']]) {
+			return $itemPath .'/'. $originalFilename;
 		} else {
-			return $this->originalFilenames[$field];
+			return $originalFilename;
 		}
 	}
 

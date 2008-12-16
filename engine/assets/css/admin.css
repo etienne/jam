@@ -171,6 +171,11 @@ div#body {
 	padding: 0 20px 60px 210px;
 }
 
+div#body form a {
+	font-weight: bold;
+	border-bottom: 1px solid #d6d6d6;
+}
+
 p.addItem {
 	font-size: 125%;
 }

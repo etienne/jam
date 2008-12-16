@@ -45,6 +45,52 @@ class Date {
 		$this->now = strtotime($_JAG['databaseTime']);
 	}
 	
+	function DateRange($days) {
+		global $_JAG;
+		$endTimestamp = $this->timestamp + (($days - 1) * 24 * 60 * 60);
+		$endDate = new Date($endTimestamp);
+		
+		$startDay = $this->GetDay();
+		$startMonth = $_JAG['strings']['months'][$this->GetMonth()];
+		$startYear = $this->GetYear();
+		
+		$endDay = $endDate->GetDay();
+		$endMonth = $_JAG['strings']['months'][$endDate->GetMonth()];
+		$endYear = $endDate->GetYear();
+		
+		// Check whether date range begins and ends in the same month and year
+		$sameMonth = ($startMonth == $endMonth);
+		$sameYear = ($startYear == $endYear);
+		
+		// Set date separator
+		$separator = ' '. $_JAG['strings']['words']['to'] .' ';
+		
+		// If dates aren't in the same year, just use LongDate() for both the start and end date
+		if (!$sameYear) {
+			return $this->LongDate() . $separator . $endDate->LongDate();
+		}
+		
+		// Otherwise, format date according to language
+		switch ($_JAG['language']) {
+			case 'en':
+				if ($sameMonth) {
+					return $startMonth .' '. $startDay . $separator . $endDay .' '. $startYear;
+				} else {
+					return $startMonth .' '. $startDay . $separator . $endMonth .' '. $endDay .' '. $startYear;
+				}
+				break;
+			default:
+				if ($sameMonth) {
+					return $startDay . $separator . $endDay .' '. $startMonth .' '. $startYear;
+				} else {
+					return $startDay .' '. $startMonth . $separator . $endDay .' '. $endMonth .' '. $startYear;
+				}
+				break;
+		}
+		
+		return false;
+	}
+	
 	function LongDate() {
 		global $_JAG;
 		$day = date('j',$this->timestamp);

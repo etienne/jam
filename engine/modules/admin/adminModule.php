@@ -12,7 +12,7 @@ class AdminModule extends Module {
 				// Module needs to be installed
 				$module = Module::GetNewModule($moduleName);
 				if (!$module->Install()) {
-					trigger_error("Couldn't install module " . $moduleName);
+					trigger_error("Couldn't install module " . $moduleName, E_USER_ERROR);
 					return false;
 				}
 				$modulesInstalled = true;

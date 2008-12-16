@@ -6,7 +6,9 @@
 	<link rel="stylesheet" href="<?= ROOT ?>assets/css/reset.css" type="text/css" media="screen" />
 	<link rel="stylesheet" href="<?= ROOT ?>assets/css/admin.css" type="text/css" media="screen" />
 	<script type="text/javascript" src="<?= ROOT ?>assets/js/jquery.js"></script>
+	<script type="text/javascript" src="<?= ROOT ?>assets/js/jquery.sortable.js"></script>
 	<script type="text/javascript" src="<?= ROOT ?>assets/js/admin.js"></script>
+	<script type="text/javascript" src="<?= ROOT ?>assets/js/fckeditor/fckeditor.js"></script>
 </head>
 <body>
 

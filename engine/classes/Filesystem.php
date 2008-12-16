@@ -46,7 +46,7 @@ class Filesystem {
 		$dirHandle = opendir($dir);
 		while ($dirname = readdir($dirHandle)) {
 			if (is_dir($dir . "/" . $dirname)) {
-				if ($dirname != '.' && $dirname != '..') {
+				if (substr($dirname, 0, 1) != '.') {
 					$result[$dirname] = $dirname;
 				}
 			}

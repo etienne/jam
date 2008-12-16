@@ -1,5 +1,7 @@
 <?php
 
+require_once('classes/Form.php');
+
 class ModuleForm extends Form {
 	
 	var $module;
@@ -99,7 +101,7 @@ class ModuleForm extends Form {
 				$class = 'hidden '. $field . $value;
 			}
 		}
-		return Parent::Item($name, $item, $title, $class);
+		return parent::Item($name, $item, $title, $class);
 	}
 	
 	function AutoItem($name, $title = '') {
@@ -112,9 +114,21 @@ class ModuleForm extends Form {
 			$this->LoadValue($name, $info['default']);
 		}
 		
+		// Check whether we have sufficient privilege to edit
+		if ($info['canEdit'] && !$_JAG['user']->HasPrivilege($info['canEdit'])) {
+			// Determine what to display
+			if ($this->values[$name]) {
+				$note = $this->values[$name];
+			} else {
+				$note = $_JAG['strings']['admin']['na'];
+			}
+			$note = e('span', array('class' => 'disabled'), $note);
+			return $this->Disabled($name, $note, $title);
+		}
+		
 		// Use hidden field when 'hidden' value is true
 		if ($info['hidden']) {
-			return $form->Hidden($name);
+			return $this->Hidden($name);
 		}
 		
 		switch ($info['type']) {
@@ -133,7 +147,11 @@ class ModuleForm extends Form {
 				return $this->Field($name, 30, $title, 5);
 				break;
 			case 'text':
-				return $this->Field($name, 30, $title, 22);
+				if ($info['wysiwyg']) {
+					return $this->Field($name, 30, $title, 22, 'wysiwyg');
+				} else {
+					return $this->Field($name, 30, $title, 22);
+				}
 				break;
 			case 'int':
 			case 'signedint':

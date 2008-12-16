@@ -21,7 +21,7 @@
 <? break; ?>
 <? default: ?>
 
-<table class="items">
+<table class="items<?= $this->config['allowSort'] ? ' sortable' : '' ?>">
 	<thead>
 		<tr>
 		<? foreach ($tableFields as $field): ?>
@@ -42,7 +42,8 @@
 		<tr>
 			<? foreach ($tableFields as $key => $field): ?>
 			<td>
-				<? if (get_class($item[$field]) == 'date'):
+				<? $class = get_class($item[$field]) ?>
+				<? if ($class == 'Date' || $class == 'date'):
 					$label = $item[$field]->SmartDateAndTime();
 				elseif ($this->schema[$field]['type'] == 'bool'):
 					$label = ucfirst($item[$field] ? $_JAG['strings']['words']['affirmative'] : $_JAG['strings']['words']['negative']);
@@ -55,7 +56,7 @@
 			</td>
 			<? endforeach; ?>
 			<? if ($this->CanDelete()): ?>
-			<td class="delete"><?= a('admin/'. $this->name .'?a=delete&amp;id='. $item['id'], $_JAG['strings']['admin']['delete']) ?></td>
+			<td class="delete"><?= a('admin/'. $this->name .'?a=delete&amp;id='. ($item['master'] ? $item['master'] : $item['id']), $_JAG['strings']['admin']['delete']) ?></td>
 			<? endif; ?>
 		</tr>
 	<? endforeach; ?>
