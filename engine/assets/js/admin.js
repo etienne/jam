@@ -1,6 +1,14 @@
 $(document).ready(function(){
+	// Allow sort
+	//if ($('table.sortable')) {
+		// Don't display sortIndex column
+//		$('table.sortable th:first-child, table.sortable td:first-child').hide();
+		
+		// Display link to allow reorder
+//	}
+
 	// Make table headers clickable
-	$('table.items th').hover(
+	$('table.items th:not(.draggable)').hover(
 		function() {
 			$(this).addClass('hover');
 		},
@@ -14,7 +22,7 @@ $(document).ready(function(){
 	)
 	
 	// Change table row behavior
-	$('table.items td:not(.delete)').hover(
+	$('table.items td:not(.delete, .draggable)').hover(
 		function() {
 			$(this).parents('tr').addClass('hover');
 		},
@@ -27,17 +35,25 @@ $(document).ready(function(){
 		}
 	);
 	
-	// Make certain rows sortable
-	$('table.sortable tr').sortable({'axis' : 'y'});
-	
-	/*
 	// FCKEditor
 	if ($('textarea.wysiwyg').length > 0) {
 		$('textarea.wysiwyg').attr('id', 'wysiwyg').parents('div').width('560px');
+		
+		// Find base path for FCKEditor
+		$('script').each(function(index) {
+			var string = $(this).attr('src');
+			var index;
+			if (index = string.indexOf('assets/js/')) {
+				basePath = string.substring(0, index);
+				return false;
+			}
+		});
+
 		var oFCKeditor = new FCKeditor('wysiwyg');
-		oFCKeditor.BasePath = "/qs/trunk/assets/js/fckeditor/";
+		oFCKeditor.Height = '480';
+		oFCKeditor.BasePath = basePath + "assets/js/fckeditor/";
 		oFCKeditor.ReplaceTextarea() ;
-	}*/
+	}
 	
 	
 	// Add new selector for case-insensitive :contains(); code by Erik Beeson

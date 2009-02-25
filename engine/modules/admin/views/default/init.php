@@ -7,6 +7,6 @@ if ($this->config['canInsert']) {
 	$canInsert = true;
 }
 
-$this->template['canInsert'] = $canInsert;
+$this->view['canInsert'] = $canInsert;
 
 ?>

@@ -22,6 +22,6 @@ foreach ($versions as $id => $timestamp) {
 	$paths[$id] = a('admin/'. $this->name .'?a=revert&revertid='. $id, $dateString);
 }
 
-$this->template['paths'] = $paths;
+$this->view['paths'] = $paths;
 
 ?>

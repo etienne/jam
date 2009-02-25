@@ -16,7 +16,7 @@
 		<li><?= a('actualite', 'Actualités') ?></li>
 	</ul>
 	<div id="body">
-		<?= $_JAG['body'] ?>
+		<?= $body ?>
 	</div>
 </div>
 

@@ -5,7 +5,7 @@
 <ul>
 <? foreach ($items as $id => $item): ?>
 	<li>
-		<?= a('admin/'. $this->name .'?a=edit&id='. $id, array_pop($item)) ?>
+		<?= a('admin/'. $this->name .'?a=edit&id='. $id, next($item)) ?>
 	</li>
 <? endforeach; ?>
 </ul>

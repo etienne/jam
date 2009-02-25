@@ -1,4 +1,9 @@
 <? if ($items): ?>
+
+<? if ($this->config['adminExportFields']): ?>
+<a class="action" href="<?= ROOT . $_JAG['request'] ?>?a=export" target="_blank"><?= $_JAG['strings']['admin']['exportButton'] ?></a>
+<? endif;?>
+
 <? switch ($sortFieldType):
 	case 'file': ?>
 
@@ -21,15 +26,20 @@
 <? break; ?>
 <? default: ?>
 
-<table class="items<?= $this->config['allowSort'] ? ' sortable' : '' ?>">
+<? if ($this->config['allowSort'] == 'désactivé temporairement'): ?>
+<div class="hiddenAction">
+<span><?= $_JAG['strings']['admin']['reorderItems'] ?></span>
+</div>
+<? endif;?>
+
+<table id="<?= $this->name ?>Table" class="items<?= ($this->config['allowSort']) ? ' sortable' : '' ?>">
 	<thead>
 		<tr>
-		<? foreach ($tableFields as $field): ?>
+		<? foreach ($headerStrings as $field => $headerString): ?>
 			<th>
 				<? $sortLink = $_JAG['request'] .'?s='. $field ?>
-				<? $headerString = $this->strings['fields'][$field] ? $this->strings['fields'][$field] : $field ?>
 				<? if ($field == $sortField): ?>
-					<?= a($sortLink . '&amp;r='. (int)!$reverseSort, $headerString, array('class' => $reverseSort ? 'sort up' : 'sort down')) ?>
+					<?= a($sortLink . ($field != 'sortIndex' ? '&amp;r='. (int)!$reverseSort : ''), $headerString, array('class' => $reverseSort ? 'sort up' : 'sort down')) ?>
 				<? else: ?>
 					<?= a($sortLink, $headerString) ?>
 				<? endif; ?>
@@ -39,7 +49,7 @@
 	</thead>
 	<tbody>
 	<? foreach ($items as $item): ?>
-		<tr>
+		<tr id="row<?= $item['master'] ? $item['master'] : $item['id'] ?>">
 			<? foreach ($tableFields as $key => $field): ?>
 			<td>
 				<? $class = get_class($item[$field]) ?>
@@ -52,7 +62,7 @@
 				else:
 					$label = $item[$field];
 				endif; ?>
-				<?= $key == 0 ? a($editLinkPrefix . ($item['master'] ? $item['master'] : $item['id']), $label) : $label ?>
+				<?= $field == $linkField ? a($editLinkPrefix . ($item['master'] ? $item['master'] : $item['id']), $label) : $label ?>
 			</td>
 			<? endforeach; ?>
 			<? if ($this->CanDelete()): ?>

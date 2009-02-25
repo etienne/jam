@@ -69,12 +69,14 @@ class Form {
 		return in_array($field, $this->missing);
 	}
 
-	function Item($name, $item, $title = '', $class = '') {
+	function Item($name, $item, $title = '', $class = '', $append = '') {
 		// If we supply a title, generate <label/> tag
 		if ($title) {
 			$itemString = e('label', array('for' => 'form_'. $name), $title);
-			$itemString .= e('div', $item);
+			$itemString .= e('div', $item) . $append;
+
 			if ($class) $classesArray[] = $class;
+
 			// Look for missing or invalid items
 			if (in_array($name, $this->missing)) {
 				$classesArray[] = 'missing';
@@ -199,23 +201,35 @@ class Form {
 		return $this->Select($name, $array, $title, true, $forbid);
 	}
 
-	function Datetime($name, $title, $showTime = true) {
+	function Datetime($name, $title, $displayMode = 0) {
 		global $_JAG;
-
+		
+		/* $displayMode:
+		 	0 = date and time
+			1 = date only
+			2 = time only
+		 */
+		
 		// If we already have a date in $this->values, use that, otherwise use current time
-		if ($date = $this->values[$name] ? $this->values[$name] : $_JAG['databaseTime']) {
-			// Create Date object if we don't already have one
-			$class = get_class($item[$field]);
-			if (!($class == 'Date' || $class == 'date')) {
-				$date = new Date($date);
+		if ($displayMode == 0 || $displayMode == 1) {
+			if ($date = $this->values[$name] ? $this->values[$name] : $_JAG['databaseTime']) {
+				// Create Date object if we don't already have one
+				$class = get_class($item[$field]);
+				if (!($class == 'Date' || $class == 'date')) {
+					$date = new Date($date);
+				}
+
+				// Split it up so we can use it
+				$this->values[$name . '_year'] = $date->GetYear();
+				$this->values[$name . '_month'] = $date->GetMonth();
+				$this->values[$name . '_day'] = $date->GetDay();
+				$this->values[$name . '_hour'] = $date->GetHour();
+				$this->values[$name . '_minutes'] = $date->GetMinutes();
 			}
-			
-			// Split it up so we can use it
-			$this->values[$name . '_year'] = $date->GetYear();
-			$this->values[$name . '_month'] = $date->GetMonth();
-			$this->values[$name . '_day'] = $date->GetDay();
-			$this->values[$name . '_hour'] = $date->GetHour();
-			$this->values[$name . '_minutes'] = $date->GetMinutes();
+		} elseif ($displayMode == 2) {
+			$time = $this->values[$name] ? $this->values[$name] : '00:00';
+			$this->values[$name .'_hour'] = substr($time, 0, 2);
+			$this->values[$name .'_minutes'] = substr($time, 3, 2);
 		}
 		
 		// Create arrays for days, hours, and minutes
@@ -224,15 +238,25 @@ class Form {
 		for ($i = 0; $i <= 59; $i++) { $minutesArray[$i] = str_pad($i, 2, '0', STR_PAD_LEFT); }
 		
 		// Date
-		$string = $this->Popup($name .'_day', $daysArray);
-		$string .= $this->Popup($name .'_month', $_JAG['strings']['months']);
-		$string .= $this->Field($name .'_year', 4);
+		$dateString = $this->Popup($name .'_day', $daysArray);
+		$dateString .= $this->Popup($name .'_month', $_JAG['strings']['months']);
+		$dateString .= $this->Field($name .'_year', 4);
 		
 		// Time
-		if ($showTime) {
-			$string .= ' '. $this->Popup($name .'_hour', $hoursArray) .':'. $this->Popup($name .'_minutes', $minutesArray);
-		}
+		$timeString = $this->Popup($name .'_hour', $hoursArray) .':'. $this->Popup($name .'_minutes', $minutesArray);
 		
+		// Display correct fields according to $displayMode
+		switch ($displayMode) {
+			case 0:
+				$string = $dateString .' '. $timeString;
+				break;
+			case 1:
+				$string = $dateString;
+				break;
+			case 2:
+				$string = $timeString;
+				break;
+		}
 		return $this->Item($name, $string, $title);
 	}
 

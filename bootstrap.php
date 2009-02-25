@@ -139,7 +139,11 @@ $_JAG['user'] = new User();
 $requestedMode = $_GET['mode'];
 $availableModes = IniFile::Parse('engine/config/modes.ini');
 if ($availableModes[$requestedMode]) {
-	$_JAG['requestedMode'] = $requestedMode;
+	// If requested mode exists, use it
+	$_JAG['mode'] = $requestedMode;
+} else {
+	// HTML is the default mode
+	$_JAG['mode'] = 'html';
 }
 
 // Load paths
@@ -158,11 +162,9 @@ if ($path = $_JAG['paths'][$_JAG['request']]) {
 		if ($_JAG['rootModule'] = Module::GetNewModule($_JAG['rootModuleName'], $path['item'])) {
 			// Check whether we have sufficient privileges to display the module
 			if ($_JAG['rootModule']->CanView()) {
+				// Display module
 				$_JAG['rootModule']->Display();
-				
-				// Display super views, only for root module
-				$_JAG['rootModule']->DisplaySuperViews();
-				
+
 				// Determine path to admin pane for this item
 				$adminPath = 'admin/'. $moduleName;
 				if ($_JAG['paths'][$adminPath]) {
@@ -174,7 +176,7 @@ if ($path = $_JAG['paths'][$_JAG['request']]) {
 					$_JAG['adminPath'] = ROOT . 'admin';
 				}
 			} else {
-				// Display login if we don't
+				// Display login if we can't display
 				$_JAG['user']->Connect();
 			}
 		} else {
@@ -198,28 +200,17 @@ if ($path = $_JAG['paths'][$_JAG['request']]) {
 }
 
 // Store and flush the contents of the output buffer
-$_JAG['body'] = ob_get_contents();
-ob_end_clean();
+$buffer = ob_get_clean();
 
-// Determine mode; default is HTML
-if (!$_JAG['mode']) {
-	$_JAG['mode'] = 'html';
-}
-
-// Determine template
-if ($_JAG['mode'] == 'html') {
-	// If we're in HTML mode and no template was specified, use HTML
-	if (!$_JAG['template']) $_JAG['template'] = 'html';
+// Load and display template associated with mode
+if ($_JAG['mode'] == 'html' && $_JAG['rootModuleName'] == 'admin') {
+	// Special case for admin pages requested in HTML
+	$templateName = 'html_admin';
 } else {
-	// We're not in HTML mode; use mode as template
-	$_JAG['template'] = $_JAG['mode'];
+	$templateName = $_JAG['mode'];
 }
-
-// Load template
-$templateFile = 'templates/'. $_JAG['template'] .'.php';
-if (Filesystem::FileExistsInIncludePath($templateFile)) {
-	require $templateFile;
-}
+$template = new Template($templateName);
+$template->Display($buffer);
 
 // Set MIME type
 $contentType = $_JAG['contentType'] ? $_JAG['contentType'] : $availableModes[$_JAG['mode']];

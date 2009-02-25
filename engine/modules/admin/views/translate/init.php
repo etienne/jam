@@ -10,7 +10,7 @@ foreach ($this->schema as $name => $info) {
 // FIXME: Messy kludge below.
 
 // Load original language data
-$this->template['originalData'] = $this->FetchItem($_GET['item']);
+$this->view['originalData'] = $this->FetchItem($_GET['item']);
 unset($this->itemID);
 
 // Load existing data

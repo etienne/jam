@@ -6,9 +6,3 @@ Procédure d'installation
 3. Charger l'URL correspondant au répertoire d'installation
 
 Normalement vous devriez tomber sur la page d'administration et être en mesure d'insérer des données dans la base de données. Le nom et le mot de passe par défaut sont admin/admin.
-
-Todo
-----
-
-- Ajouter des foreign keys, en particulier pour que les traductions s'effacent toutes seules quand on efface l'item parent.
-- Dans les modules, déplacer les paths de config/config.ini vers strings/*.ini?

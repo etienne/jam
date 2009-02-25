@@ -6,6 +6,7 @@ require_once('classes/Filesystem.php');
 require_once('classes/Form.php');
 require_once('classes/HTTP.php');
 require_once('classes/Path.php');
+require_once('classes/Template.php');
 require_once('classes/Query.php');
 require_once('classes/Query.php');
 
@@ -16,6 +17,7 @@ class Module {
 	var $itemID;
 	var $config;
 	var $schema;
+	var $isRoot;
 
 	var $modulePath;
 	var $keyFieldName;
@@ -39,15 +41,23 @@ class Module {
 	var $invalidData;
 	var $fileUploadError;
 	var $files;
-	var $template = array();
+	var $template;
+	var $view = array();
 	
 	/*
 	 * Constructor
 	 */
 	
 	function Module($name, $item = '') {
+		global $_JAG;
+		
 		$this->name = $name;
 		$this->itemID = $item;
+		
+		// Determine whether we are the root module
+		if (!isset($_JAG['rootModule'])) {
+			$this->isRoot = true;
+		}
 	}
 	
 	/*
@@ -161,12 +171,6 @@ class Module {
 		// Check whether we should disable cache
 		if ($this->config['disableCache']) {
 			$_JAG['cache']->Forbid();
-		}
-		
-		// Determine template if we're the root module
-		// FIXME: this shouldn't work for non-root modules
-		if ($this->config['template']) {
-			$_JAG['template'] = $this->config['template'];
 		}
 		
 		// Get info for this module's table, if there is one
@@ -376,11 +380,6 @@ class Module {
 			'limit' => 1
 		);
 		
-		foreach($this->schema as $name => $info) {
-			// Add all fields to query
-			$params['fields'][$name] = $name;
-		}
-
 		if ($items = $this->FetchItems($params)) {
 			$this->itemID = $id;
 			return $this->item = current($items);
@@ -447,13 +446,24 @@ class Module {
 					$relatedModule != 'users' &&
 					$relatedModule != $this->name
 				) {
+					// Add fields from foreign module
 					$relatedModuleSchema = Module::ParseConfigFile($relatedModule, 'config/schema.ini', true);
 					foreach($relatedModuleSchema as $foreignName => $foreignInfo) {
 						$fields[$name .'_'. $foreignName] = $relatedModule .'.'. $foreignName;
 					}
 					$query->AddFields($fields);
+					
+					// Determine whether we should look for 'master' or 'id' field
+					$relatedModuleConfig = Module::ParseConfigFile($relatedModule, 'config/config.ini', true);
+					$joinCondition = $this->name .'.'. $name .' = ';
+					if ($relatedModuleConfig['keepVersions']) {
+						$joinCondition .= $relatedModule .'.master AND '. $relatedModule .'.current = TRUE';
+					} else {
+						$joinCondition .= $relatedModule .'.id';
+					}
+					
+					// Build query
 					$joinTable = $relatedModule;
-					$joinCondition = $this->name .'.'. $name .' = '. $relatedModule .'.id';
 					$query->AddJoin($this->name, $joinTable, $joinCondition);
 				}
 			}
@@ -462,6 +472,15 @@ class Module {
 		
 		// Load custom parameters
 		$query->LoadParameters($queryParams);
+		
+		// Load all fields if none were specified
+		if (!$queryParams['fields']) {
+			foreach($this->schema as $name => $info) {
+				// Add all fields to query
+				$query->AddFields($this->name .'.'. $name);
+			}
+		}
+		
 		
 		// Load paths if appropriate
 		if ($this->config['autoPaths'] || (get_parent_class($this) && method_exists($this, 'GetPath'))) {
@@ -528,6 +547,7 @@ class Module {
 							case 'datetime':
 							case 'timestamp':
 							case 'date':
+							case 'time':
 								$dataArray[$id][$name] = new Date($data[$name]);
 								break;
 							case 'file':
@@ -554,40 +574,33 @@ class Module {
 	}
 	
 	function Display() {
+		global $_JAG;
+
+		// Start output buffering
+		ob_start('mb_output_handler');
+		
 		// Determine whether we're looking at a single item in the module
 		if ($this->itemID) {
 			// Try to load the item view
 			if ($this->LoadView('item')) {
-				return true;
+				$viewDidLoad = true;
 			}
 		}
-		return $this->LoadView('default');
-	}
-	
-	function DisplaySuperViews() {
-		global $_JAG;
+		if (!$viewDidLoad) {
+			$this->LoadView('default');
+		}
 		
-		// Get a list of super views (name starts with _)
-	 	if ($views = Filesystem::GetDirNames($this->modulePath .'/views')) {
-			foreach ($views as $view) {
-				if (substr($view, 0, 1) == '_') {
-					$superViews[] = $view;
-				}
-			}
-			
-			// Render each superview in its own output buffer, then store as an array in $_JAG['superviews']
-			if ($superViews) {
-				foreach ($superViews as $superView) {
-					// We don't want to use the '_' to refer to the superview in $_JAG['superviews]
-					$superViewCleanName = substr($superView, 1);
-					ob_start('mb_output_handler');
-					$this->LoadView($superView);
-					$_JAG['superviews'][$superViewCleanName] = ob_get_contents();
-					ob_end_clean();
-				}
-			}
-			
-		}		
+		// Wrap into template if one was specified
+		$buffer = ob_get_clean();
+		if ($this->isRoot) {
+			$templateName = $this->template ? $this->template : $this->config['template'];
+			if (!$templateName) $templateName = 'default';
+			$templateFile = $templateName .'.'. $_JAG['mode'];
+			$template = new Template($templateFile);
+			$template->Display($buffer);
+		} else {
+			print $buffer;
+		}
 	}
 	
 	function LoadView($view) {
@@ -648,12 +661,12 @@ class Module {
 			include $initScript;
 		}
 		
-		// Load module data into template variables
+		// Load module data into view variables
 		if ($this->item) extract($this->item);
-		if ($this->items) $this->template['items'] = $this->items;
+		if ($this->items) $this->view['items'] = $this->items;
 		
-		// Load template variables into local symbol table
-		extract($this->template);
+		// Load view variables into local symbol table
+		extract($this->view);
 		
 		// Load template for requested mode, if it exists
 		$templateForRequestedMode = $viewDir .'/'. $_JAG['requestedMode'] .'.php';
@@ -793,23 +806,25 @@ class Module {
 			print $form->AutoItem($name, $title);
 		}
 		
-		// Display related modules
-		foreach ($_JAG['installedModules'] as $module) {
-			// First check whether we have a view configured for related module display
-			if (
-				($relatedModuleSchema = Module::ParseConfigFile($module, 'config/schema.ini', true)) &&
-				($relatedModuleKeyQuery = Module::ParseConfigFile($module, 'config/keyQuery.ini', true))
-			) {
-				foreach($relatedModuleSchema as $field => $info) {
-					if ($info['relatedModule'] == $this->name) {
-						$relatedModule = $this->parentModule->NestModule($module);
-						// Load all fields
-						$queryParams = array(
-							'fields' => $relatedModuleKeyQuery['fields'],
-							'where' => $module .'.'. $field .' = '. $this->itemID
-						);
-						$relatedModule->FetchItems($queryParams);
-						$relatedModule->LoadView('subform');
+		// Display related modules if we have item data
+		if ($this->itemID) {
+			foreach ($_JAG['installedModules'] as $module) {
+				// First check whether we have a view configured for related module display
+				if (
+					($relatedModuleSchema = Module::ParseConfigFile($module, 'config/schema.ini', true)) &&
+					($relatedModuleKeyQuery = Module::ParseConfigFile($module, 'config/keyQuery.ini', true))
+				) {
+					foreach($relatedModuleSchema as $field => $info) {
+						if ($info['relatedModule'] == $this->name) {
+							$relatedModule = $this->parentModule->NestModule($module);
+							// Load all fields
+							$queryParams = array(
+								'fields' => $relatedModuleKeyQuery['fields'],
+								'where' => $module .'.'. $field .' = '. $this->itemID
+							);
+							$relatedModule->FetchItems($queryParams);
+							$relatedModule->LoadView('subform');
+						}
 					}
 				}
 			}
@@ -820,7 +835,7 @@ class Module {
 				print $form->Hidden($field, $value);
 			}
 		}
-		
+
 		print $form->Submit();
 		$form->Close();
 		return true;
@@ -882,6 +897,23 @@ class Module {
 						} else {
 							$this->invalidData[] = $field;
 						}
+					}
+					break;
+				case 'time':
+					$hour = $_POST[$field .'_hour'];
+					$minutes = $_POST[$field .'_minutes'];
+					$timeString = $hour .':'. $minutes;
+
+					// Store values for both individual fields in case we don't have anything better
+					$this->postData[$field .'_hour'] = $hour;
+					$this->postData[$field .'_minutes'] = $minutes;
+					
+					// Prepare and validate date
+					if (Date::ValidateTime($timeString)) {
+						// Warning: Time is not localized according to database time
+						$this->postData[$field] = $timeString;
+					} else {
+						$this->invalidData[] = $field;
 					}
 					break;
 				case 'file':
@@ -1122,7 +1154,11 @@ class Module {
 		$anchor = $this->config['redirectToAnchor'][$this->parentModule->name];
 		
 		// Reload page
-		HTTP::ReloadCurrentURL('?m=updated'. ($anchor ? '#' . $anchor : ''));
+		if ($_JAG['rootModuleName'] == 'admin' || !$this->config['postSubmitRedirect']) {
+			HTTP::ReloadCurrentURL('?m=updated'. ($anchor ? '#' . $anchor : ''));
+		} else {
+			HTTP::RedirectLocal($this->config['postSubmitRedirect']);
+		}
 	}
 	
 	function UpdateItems($params, $where) {

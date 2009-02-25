@@ -13,7 +13,12 @@
 	<li><?= a('admin/'. $this->name .'?a=delete&id='. $this->itemID, $_JAG['strings']['admin']['delete']) ?></li>
 <? endif; ?>
 </ul>
+<ul class="navigation">
+	<li><?= a($linkToListView, $_JAG['strings']['admin']['returnToList']) ?></li>
+	<? if ($this->itemID): ?>
+		<li><?= a($linkToPrevious, '←') ?></li>
+		<li><?= a($linkToNext, '→') ?></li>
+	<? endif; ?>
+</ul>
 
 <? $this->LoadView('form') ?>
-
-

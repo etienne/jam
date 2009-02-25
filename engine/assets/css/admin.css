@@ -57,13 +57,12 @@ code {
 
 div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUpload {
 	clear: both;
-	padding: 10px 0;
-	background: url("lined.png") top left repeat-x;
+	padding: 8px 12px;
+	background-color: #f8e785;
 	width: 570px;
-	margin-bottom: 12px;
+	margin-bottom: 18px;
 	float: left;
-	font-size: 15px;
-	color: #d10;
+	font-size: 13px;
 }
 
 p.disabled {
@@ -210,9 +209,28 @@ a.button:hover {
 	color: white;
 }
 
+a.action {
+	clear: both;
+	float: right;
+	color: white;
+	background-color: #333;
+	padding: 3px 8px;
+	margin-bottom: 8px;
+}
+
+a.action:hover {
+	background-color: #d10;
+}
+
 /* Item actions
    --------------------------------------------------
 */
+
+ul.navigation {
+	clear: both;
+	float: left;
+	margin: 0 0 18px -9px;
+}
 
 ul.actions {
 	float: right;
@@ -220,12 +238,12 @@ ul.actions {
 	text-align: right;
 }
 
-ul.actions li {
+ul.actions li, ul.navigation li {
 	float: left;
 	border-left: 1px solid #eee;
 }
 
-ul.actions li:first-child {
+ul.actions li:first-child, ul.navigation li:first-child {
 	border-left: 0;
 }
 
@@ -236,8 +254,19 @@ ul.actions a {
 	display: block;
 }
 
+ul.navigation a {
+	color: #999;
+	padding: 4px 9px;
+	display: block;
+}
+
 ul.actions a:hover {
 	background-color: #d10;
+	color: white;
+}
+
+ul.navigation a:hover {
+	background-color: #333;
 	color: white;
 }
 
@@ -298,6 +327,17 @@ ul.images img {
    --------------------------------------------------
 */
 
+div.hiddenAction {
+	float: right;
+	clear: both;
+	margin-right: 10px;
+}
+
+div.hiddenAction span {
+	color: #999;
+	border-bottom: 1px solid #eee;
+}
+
 table.items {
 	clear: both;
 	border-spacing: 0;
@@ -355,11 +395,30 @@ table.items tr.hover {
 	cursor: pointer;
 }
 
-table.items tr.hover td {
+table.items tr.dragging, table.items tr.dragging td.draggable {
+	background-color: #eee;
+}
+
+
+table.items td.draggable, table.items tr.hover td.draggable {
+	background-color: white;
+	color: #ccc;
+}
+
+table.items td.draggable:hover {
+	color: #666;
 }
 
 table.items tr.hover * {
 	color: white;
+}
+
+table.items th.draggable {
+	padding: 0 4px;
+}
+
+table.items td.draggable {
+	cursor: move;
 }
 
 input.search {
@@ -420,7 +479,13 @@ form div.missing {
 }
 
 form div.invalid {
-	color: #eee;
+	color: #f05123;
+}
+
+form div.note {
+	margin: 2px 0 0 0;
+	line-height: 17px;
+	color: #999;
 }
 
 form label {
@@ -470,9 +535,9 @@ span.fileDeleteCheckbox {
 	float: right;
 }
 
-a.thumbnail {
+div#body form a.thumbnail {
 	display: block;
-	border: 1px;
+	border: 0;
 	margin-bottom: 8px;
 }
 

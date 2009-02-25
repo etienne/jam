@@ -9,15 +9,15 @@ $this->LoadData($data);
 
 // Display friendly UI
 $masterID = $this->item['master'] ? $this->item['master'] : $this->item['id'];
-$this->template['backLink'] = a(
+$this->view['backLink'] = a(
 	'admin/'. $this->name .'?a=old&id='. $masterID,
 	$_JAG['strings']['admin']['backRevert']
 );
-$this->template['masterID'] = $masterID;
-$this->template['revertID'] = $revertID;
-$this->template['message'] = $_JAG['strings']['admin']['revertConfirmation'];
+$this->view['masterID'] = $masterID;
+$this->view['revertID'] = $revertID;
+$this->view['message'] = $_JAG['strings']['admin']['revertConfirmation'];
 
 // Build confirmation form
-$this->template['confirmForm'] = new Form();
+$this->view['confirmForm'] = new Form();
 
 ?>

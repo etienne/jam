@@ -101,7 +101,13 @@ class ModuleForm extends Form {
 				$class = 'hidden '. $field . $value;
 			}
 		}
-		return parent::Item($name, $item, $title, $class);
+
+		// Include note if provided and only if we're already displaying a title
+		if ($title && $this->module->strings['notes'][$name]) {
+			$note = e('div', array('class' => 'note'), $this->module->strings['notes'][$name]);
+		}
+		
+		return parent::Item($name, $item, $title, $class, $note);
 	}
 	
 	function AutoItem($name, $title = '') {
@@ -182,7 +188,10 @@ class ModuleForm extends Form {
 				return $this->Datetime($name, $title);
 				break;
 			case 'date':
-				return $this->Datetime($name, $title, false);
+				return $this->Datetime($name, $title, 1);
+				break;
+			case 'time':
+				return $this->Datetime($name, $title, 2);
 				break;
 			case 'bool':
 				return $this->Checkbox($name, $title);

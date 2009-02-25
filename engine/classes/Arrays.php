@@ -41,6 +41,47 @@ class Arrays {
 		print Arrays::GetDisplayString($array);
 	}
 	
+	function GetAdjacentKeys($array, $currentKey, $loop = true) {
+		// Given $currentKey, returns previous and next keys in $array
+		
+		// Loop through each item in array, looking for $currentKey
+		$i = 1;
+		foreach ($array as $key => $item) {
+			// Identify first key
+			if (!isset($firstKey)) {
+				$firstKey = $key;
+			}
+			
+			if ($flagNextKey) {
+				$nextKey = $key;
+				$flagNextKey = false;
+			}
+			if ($currentKey == $key) {
+				$currentIndex = $i;
+				$previousKey = $previousLoopKey;
+				$flagNextKey = true;
+			}
+			$previousLoopKey = $key;
+			$lastKey = $key;
+			$i++;
+		}
+		
+		if ($loop) {
+			if (!isset($previousKey)) {
+				// Previous key is last key
+				$previousKey = $lastKey;
+			}
+			if (!isset($nextKey)) {
+				// Next key is first key
+				$nextKey = $firstKey;
+			}
+		}
+		
+		$totalCount = count($array);
+		
+		return array($previousKey, $nextKey, $currentIndex, $totalCount);
+	}
+	
 }
 
 ?>

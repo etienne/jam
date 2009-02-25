@@ -8,6 +8,10 @@ class Date {
 	var $now;
 	var $isValid;
 	
+	/*
+	 * Constructor
+	 */
+	
 	function Date ($time, $isLocal = false) {
 		global $_JAG;
 		
@@ -43,6 +47,64 @@ class Date {
 		
 		// Get local database time
 		$this->now = strtotime($_JAG['databaseTime']);
+	}
+	
+	/*
+	 * Static
+	 */
+	
+	function PadWithZeros($string) {
+		return str_pad($string, 2, '0', STR_PAD_LEFT);
+	}
+	
+	function ValidateTime($time) {
+		// Checks that $time is a valid time in HH:MM format
+		$hour = substr($time, 0, 2);
+		$minutes = substr($time, -2);
+		if (($hour >= 0 && $hour < 24) && ($minutes >= 0 && $minutes < 60) ) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/*
+	 * Public
+	 */
+	
+	function Offset($amount, $unit) {
+		// Offset the time by given amount
+		switch ($unit) {
+			case 'years':
+				$offsetFactor = 365 * 24 * 60 * 60;
+				break;
+			case 'months':
+				$offsetFactor = 30 * 24 * 60 * 60;
+				break;
+			case 'weeks':
+				$offsetFactor = 7 * 24 * 60 * 60;
+				break;
+			case 'days':
+				$offsetFactor = 24 * 60 * 60;
+				break;
+			case 'hours':
+				$offsetFactor = 60 * 60;
+				break;
+			case 'minutes':
+				$offsetFactor = 60;
+				break;
+			case 'seconds':
+			default:
+				$offsetFactor = 1;
+				break;
+		}
+		$offsetAmount = $amount * $offsetFactor;
+		
+		if ($this->timestamp += $offsetAmount) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	function DateRange($days) {
@@ -198,9 +260,6 @@ class Date {
 		return date('s', $this->timestamp);
 	}
 	
-	function PadWithZeros($string) {
-		return str_pad($string, 2, '0', STR_PAD_LEFT);
-	}
 }
 
 ?>
