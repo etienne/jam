@@ -423,6 +423,13 @@ class Module {
 			$query->AddWhere($where);
 		}
 		
+		// Load all fields if none were specified
+		if (!$queryParams['fields']) {
+			foreach($this->schema as $name => $info) {
+				$queryParams['fields'][] = $name;
+			}
+		}
+
 		foreach($this->schema as $name => $info) {
 			// Manually remove multi fields from query; they will be processed anyway (possibly kludgy)
 			if ($info['type'] == 'multi') {
@@ -472,15 +479,6 @@ class Module {
 		
 		// Load custom parameters
 		$query->LoadParameters($queryParams);
-		
-		// Load all fields if none were specified
-		if (!$queryParams['fields']) {
-			foreach($this->schema as $name => $info) {
-				// Add all fields to query
-				$query->AddFields($this->name .'.'. $name);
-			}
-		}
-		
 		
 		// Load paths if appropriate
 		if ($this->config['autoPaths'] || (get_parent_class($this) && method_exists($this, 'GetPath'))) {

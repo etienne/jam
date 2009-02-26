@@ -1,5 +1,3 @@
-<h1><?= $this->strings['adminTitle'] ?></h1>
-
 <table cellpadding="0" cellspacing="0">
 	<tr>
 		<? foreach($headers as $header): ?>

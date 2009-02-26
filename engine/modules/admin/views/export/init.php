@@ -1,7 +1,6 @@
 <?php
 
-// Switch to print template
-$_JAG['template'] = 'print';
+$_JAG['title'] = $this->strings['adminTitle'];
 
 // Check whether we should display anything at all
 if ($exportFields = $this->config['adminExportFields']) {
@@ -115,7 +114,5 @@ if ($exportFields = $this->config['adminExportFields']) {
 	// Store in template
 	$this->view['data']	= $data;
 }
-
-$_JAG['title'] = $this->strings['adminTitle'];
 
 ?>

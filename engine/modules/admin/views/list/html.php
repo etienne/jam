@@ -1,7 +1,7 @@
 <? if ($items): ?>
 
 <? if ($this->config['adminExportFields']): ?>
-<a class="action" href="<?= ROOT . $_JAG['request'] ?>?a=export" target="_blank"><?= $_JAG['strings']['admin']['exportButton'] ?></a>
+<a class="action" href="<?= ROOT . $_JAG['request'] ?>?a=export"><?= $_JAG['strings']['admin']['exportButton'] ?></a>
 <? endif;?>
 
 <? switch ($sortFieldType):
