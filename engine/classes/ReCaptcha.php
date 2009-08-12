@@ -7,8 +7,8 @@ class ReCaptcha {
 	/* Static */
 	
 	function Display($publicKey, $theme = 'clean') {
-		global $_JAG;
-		$settingsString = "var RecaptchaOptions = { theme : '". $theme ."', lang : '". $_JAG['language'] ."' };";
+		global $_JAM;
+		$settingsString = "var RecaptchaOptions = { theme : '". $theme ."', lang : '". $_JAM->language ."' };";
 		$scriptElement = e('script', $settingsString);
 		print $scriptElement;
 		print recaptcha_get_html($publicKey);

@@ -12,7 +12,7 @@ class ModuleForm extends Form {
 	 */	
 	
 	function ModuleForm(&$module) {
-		global $_JAG;
+		global $_JAM;
 		
 		parent::Form();
 		
@@ -40,7 +40,7 @@ class ModuleForm extends Form {
 			$errorString =
 				$this->module->strings['fields']['missingData'] ?
 				$this->module->strings['fields']['missingData'] :
-				$_JAG['strings']['admin']['missingData'];
+				$_JAM->strings['admin']['missingData'];
 			$params = array('class' => 'errorMissing');
 			$this->errors .= e('p', $params, $errorString);
 		}
@@ -51,7 +51,7 @@ class ModuleForm extends Form {
 			$errorString =
 				$this->module->strings['fields']['invalidData'] ?
 				$this->module->strings['fields']['invalidData'] :
-				$_JAG['strings']['admin']['invalidData'];
+				$_JAM->strings['admin']['invalidData'];
 			$params = array('class' => 'errorInvalid');
 			$this->errors .= e('p', $params, $errorString);
 		}
@@ -62,18 +62,18 @@ class ModuleForm extends Form {
 			switch ($errorCode) {
 				case UPLOAD_ERR_INI_SIZE:
 				case UPLOAD_ERR_FORM_SIZE:
-					$errorString = $_JAG['strings']['admin']['fileUploadErrorSize'];
+					$errorString = $_JAM->strings['admin']['fileUploadErrorSize'];
 					break;
 				case UPLOAD_ERR_PARTIAL:
-					$errorString = $_JAG['strings']['admin']['fileUploadErrorPartial'];
+					$errorString = $_JAM->strings['admin']['fileUploadErrorPartial'];
 					break;
 				default:
-					$errorString = $_JAG['strings']['admin']['fileUploadErrorUnknown'];
+					$errorString = $_JAM->strings['admin']['fileUploadErrorUnknown'];
 					break;
 			}
 			*/
 			if (!$errorString = $this->module->strings['fields']['fileUploadError']) {
-				$errorString = $_JAG['strings']['admin']['fileUploadError'];
+				$errorString = $_JAM->strings['admin']['fileUploadError'];
 			}
 			$params = array('class' => 'errorFileUpload');
 			$this->errors .= e('p', $params, $errorString);
@@ -111,7 +111,7 @@ class ModuleForm extends Form {
 	}
 	
 	function AutoItem($name, $title = '') {
-		global $_JAG;
+		global $_JAM;
 		
 		$info = $this->module->schema[$name];
 		
@@ -121,12 +121,12 @@ class ModuleForm extends Form {
 		}
 		
 		// Check whether we have sufficient privilege to edit
-		if ($info['canEdit'] && !$_JAG['user']->HasPrivilege($info['canEdit'])) {
+		if ($info['canEdit'] && !$_JAM->user->HasPrivilege($info['canEdit'])) {
 			// Determine what to display
 			if ($this->values[$name]) {
 				$note = $this->values[$name];
 			} else {
-				$note = $_JAG['strings']['admin']['na'];
+				$note = $_JAM->strings['admin']['na'];
 			}
 			$note = e('span', array('class' => 'disabled'), $note);
 			return $this->Disabled($name, $note, $title);
@@ -142,7 +142,7 @@ class ModuleForm extends Form {
 				return $this->Field($name, 40, $title);
 				break;
 			case 'password':
-				if ($_JAG['user']->IsAdmin()) {
+				if ($_JAM->user->IsAdmin()) {
 					// Show as regular field for user with admin privileges
 					return $this->Field($name, 40, $title);
 				} else {
@@ -170,13 +170,13 @@ class ModuleForm extends Form {
 						} else {
 							// Add "none" option for non-required fields
 							if ($info['relatedModule'] && !$info['required']) {
-								$noneArray = array(0 => $_JAG['strings']['admin']['noOption']);
+								$noneArray = array(0 => $_JAM->strings['admin']['noOption']);
 								$relatedData = $noneArray + $relatedData;
 							}
 							return $this->Popup($name, $relatedData, $title);
 						}
 					} else {
-						$note = e('span', array('class' => 'disabled'), $_JAG['strings']['admin']['na']);
+						$note = e('span', array('class' => 'disabled'), $_JAM->strings['admin']['na']);
 						return $this->Disabled($name, $note, $title);
 					}
 				} else {
@@ -207,17 +207,17 @@ class ModuleForm extends Form {
 						'type' => 'checkbox',
 						'value' => 1
 					);
-					$checkbox = e('span', array('class' => 'fileDeleteCheckbox'), e('input', $inputParams) . $_JAG['strings']['admin']['deleteThisFile']);
+					$checkbox = e('span', array('class' => 'fileDeleteCheckbox'), e('input', $inputParams) . $_JAM->strings['admin']['deleteThisFile']);
 					$filePath = $this->module->item[$name]->item['path'];
 					switch ($this->module->item[$name]->item['type']) {
 						case 'image/png':
 						case 'image/jpeg':
 						case 'image/gif':
-							$image = i($filePath .'?context=adminThumbnail', $_JAG['strings']['admin']['thumbnail']);
+							$image = i($filePath .'?context=adminThumbnail', $_JAM->strings['admin']['thumbnail']);
 							$fileLink = a($filePath, $image, array('class' => 'thumbnail'));
 							break;
 						default:
-							$fileIcon = i('assets/images/admin_file.png', $_JAG['strings']['admin']['fileIcon']);
+							$fileIcon = i('assets/images/admin_file.png', $_JAM->strings['admin']['fileIcon']);
 							$filePath = a($this->module->item[$name]->item['path'], $this->module->item[$name]->item['filename']);
 							$fileLink = $fileIcon . $filePath;
 							break;
@@ -225,7 +225,7 @@ class ModuleForm extends Form {
 					$note = $checkbox . $fileLink;
 				} else {
 					// No file has been uploaded yet
-					$note = $_JAG['strings']['admin']['noFile'];
+					$note = $_JAM->strings['admin']['noFile'];
 				}
 				return $hidden . $this->File($name, $title, $note);
 				break;
@@ -233,7 +233,7 @@ class ModuleForm extends Form {
 	}
 	
 	function Submit($label = '') {
-		global $_JAG;
+		global $_JAM;
 		$hidden = $this->Hidden('module', $this->module->name);
 		
 		$id = $this->module->item['master'] ? $this->module->item['master'] : $this->module->itemID;
@@ -241,13 +241,13 @@ class ModuleForm extends Form {
 			$hidden .= $this->Hidden('master', $id);
 			$action = 'edit';
 		} else {
-			$action = 'new';
+			$action = 'add';
 		}
 		
 		// Determine submit button string
 		$customString = $label ? $label : $this->module->strings['fields'][$this->module->parentModule->name .'.'. $action];
 		if (!$submitString = $customString) {
-			$submitString = $_JAG['strings']['admin'][$action];
+			$submitString = $_JAM->strings['admin'][$action];
 		}
 		
 		return $hidden . parent::Submit('update', $submitString);

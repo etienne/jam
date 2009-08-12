@@ -9,8 +9,8 @@ class HTTP {
 	}
 	
 	function ReloadCurrentURL($suffix) {
-		global $_JAG;
-		$url = ROOT . $_JAG['request'] . $suffix;
+		global $_JAM;
+		$url = ROOT . $_JAM->request . $suffix;
 		header('Location: ' . $url);
 		exit;
 		return true;

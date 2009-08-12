@@ -34,7 +34,7 @@ class Image {
 	}
 	
 	function OutputResizedImage($width, $height) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Determine output size
 		$autoWidth = round($this->width * ($height / $this->height));

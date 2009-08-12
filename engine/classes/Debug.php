@@ -5,10 +5,10 @@ require_once('classes/Arrays.php');
 class Debug {
 	
 	function Display($thing = '') {
-		global $_JAG;
+		global $_JAM;
 		
 		// Make sure user is an admin
-		if (!$_JAG['user'] || !$_JAG['user']->IsAdmin()) return false;
+		if (!$_JAM->user || !$_JAM->user->IsAdmin()) return false;
 		
 		// Display passed object
 		if (is_array($thing) || is_object($thing)) {

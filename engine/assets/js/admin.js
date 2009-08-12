@@ -55,6 +55,19 @@ $(document).ready(function(){
 		oFCKeditor.ReplaceTextarea() ;
 	}
 	
+	/*
+	// Delete warning
+	$('ul.actions a.delete').click(function() {
+		var warning = $('div.warning');
+		if (!warning.length) {
+			$('ul.actions').after('<div class="warning">Voulez-tu vraiment faire des affaires?</div>');
+			warning = $('div.warning');
+		}
+		warning.hide().slideDown();
+		$('ul.actions').slideUp();
+		return false;
+	});
+	*/
 	
 	// Add new selector for case-insensitive :contains(); code by Erik Beeson
 	jQuery.extend(jQuery.expr[':'], {

@@ -14,7 +14,7 @@ class Form {
 	 */
 	
 	function Form($method = 'post', $action = '') {
-		global $_JAG;
+		global $_JAM;
 		if (!$this->action = $action) {
 			// If no action was specified, use the current script
 			$this->action = $_SERVER['REQUEST_URI'];
@@ -202,7 +202,7 @@ class Form {
 	}
 
 	function Datetime($name, $title, $displayMode = 0) {
-		global $_JAG;
+		global $_JAM;
 		
 		/* $displayMode:
 		 	0 = date and time
@@ -212,7 +212,7 @@ class Form {
 		
 		// If we already have a date in $this->values, use that, otherwise use current time
 		if ($displayMode == 0 || $displayMode == 1) {
-			if ($date = $this->values[$name] ? $this->values[$name] : $_JAG['databaseTime']) {
+			if ($date = $this->values[$name] ? $this->values[$name] : $_JAM->databaseTime) {
 				// Create Date object if we don't already have one
 				$class = get_class($item[$field]);
 				if (!($class == 'Date' || $class == 'date')) {
@@ -239,7 +239,7 @@ class Form {
 		
 		// Date
 		$dateString = $this->Popup($name .'_day', $daysArray);
-		$dateString .= $this->Popup($name .'_month', $_JAG['strings']['months']);
+		$dateString .= $this->Popup($name .'_month', $_JAM->strings['months']);
 		$dateString .= $this->Field($name .'_year', 4);
 		
 		// Time

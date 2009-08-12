@@ -77,7 +77,7 @@ class User {
 	}
 	
 	function Connect() {
-		global $_JAG;
+		global $_JAM;
 		// Check whether user has submitted the login form
 		if ($_POST['connect']) {
 			// Validate login
@@ -92,15 +92,15 @@ class User {
 				HTTP::ReloadCurrentURL();
 				return true;
 			} else {
-				print e('p', array('class' => 'error'), $_JAG['strings']['admin']['incorrectLogin']);
+				print e('p', array('class' => 'error'), $_JAM->strings['admin']['incorrectLogin']);
 			}
 		}
 		// Display form if login was incorrect or user has not yet submitted the form
 		$form = new Form();
 		$form->Open();
-		print $form->Field('login', 40, $_JAG['strings']['admin']['login']);
-		print $form->Password('password', 40, $_JAG['strings']['admin']['password']);
-		print $form->Submit('connect', $_JAG['strings']['admin']['connect']);
+		print $form->Field('login', 40, $_JAM->strings['admin']['login']);
+		print $form->Password('password', 40, $_JAM->strings['admin']['password']);
+		print $form->Submit('connect', $_JAM->strings['admin']['connect']);
 		$form->Close();
 	}
 	

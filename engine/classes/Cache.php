@@ -42,9 +42,9 @@ class Cache {
 	}
 	
 	function Write() {
-		global $_JAG;
+		global $_JAM;
 		// Only cache HTML content intended for anonymous users
-		if (!$_JAG['user']->IsLoggedIn() && !$this->forbid && $_JAG['contentType'] == 'text/html' && !$_POST && !$_GET) {
+		if (!$_JAM->user->IsLoggedIn() && !$this->forbid && $_JAM->contentType == 'text/html' && !$_POST && !$_GET) {
 			// Get contents of output buffer
 			$string = ob_get_contents();
 			

@@ -1,7 +1,7 @@
 body {
 	font-size: 11px;
 	line-height: 20px;
-	color: #333;
+	color: #282828;
 	background-color: white;
 	font-family: Helvetica, Arial, sans-serif;
 	margin: 0;
@@ -50,19 +50,26 @@ dd {
 
 code {
 	display: block;
-	background-color: #eee;
+	background-color: #e9eae1;
 	padding: 8px 16px;
 	margin: 10px 0;
 }
 
-div.confirm, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUpload {
+div.confirm, div.warning, p.message, p.error, p.errorMissing, p.errorInvalid, p.errorFileUpload {
 	clear: both;
 	padding: 8px 12px;
-	background-color: #f8e785;
-	width: 570px;
+	background-color: #e9eae1;
 	margin-bottom: 18px;
 	float: left;
 	font-size: 13px;
+}
+
+div.warning {
+	float: right;
+	padding: 0 12px;
+	margin: 0;
+	position: relative;
+	top: -24px;
 }
 
 p.disabled {
@@ -95,13 +102,18 @@ div.confirm input.submit {
 */
 
 h1 {
-	color: #ddd;
-	background-color: #333;
+	color: #E2E4DB;
+	background-color: #282828;
 	font-size: 15px;
 	font-weight: bold;
 	padding: 15px 0 15px 20px;
 	margin-bottom: 27px;
 }
+
+/* Warning
+   --------------------------------------------------
+*/
+
 
 /* Top links
    --------------------------------------------------
@@ -127,7 +139,7 @@ ul#toplinks li {
 ul#toplinks a {
 	border: 0;
 	font-weight: bold;
-	color: #ddd;
+	color: #d4d6cd;
 }
 
 ul#toplinks a:hover {
@@ -146,19 +158,21 @@ ul#menu {
 
 ul#menu a {
 	font-size: 15px;
-	color: #aaa;
+	color: #a9aba0;
 	display: block;
 	padding: 4px 10px;
 	margin-left: -10px;
 }
 
 ul#menu a:hover, ul#menu li.current a:hover {
-	background-color: #333;
+	background-color: #282828;
 	color: white;
 }
 
 ul#menu li.current a {
-	color: black;
+	color: white;
+	margin-right: -9px;
+	background: #a9aba0 url("arrowMask.png") no-repeat center right;
 }
 
 /* Body
@@ -185,7 +199,7 @@ input.submit {
 	padding: 4px 12px;
 	border: none;
 	color: white;
-	background-color: #333;
+	background-color: #282828;
 	display: block;
 	cursor: pointer;
 }
@@ -213,7 +227,7 @@ a.action {
 	clear: both;
 	float: right;
 	color: white;
-	background-color: #333;
+	background-color: #282828;
 	padding: 3px 8px;
 	margin-bottom: 8px;
 }
@@ -240,7 +254,7 @@ ul.actions {
 
 ul.actions li, ul.navigation li {
 	float: left;
-	border-left: 1px solid #eee;
+	border-left: 1px solid #e9eae1;
 }
 
 ul.actions li:first-child, ul.navigation li:first-child {
@@ -249,7 +263,7 @@ ul.actions li:first-child, ul.navigation li:first-child {
 
 ul.actions a {
 	font-weight: bold;
-	color: #333;
+	color: #282828;
 	padding: 4px 12px;
 	display: block;
 }
@@ -266,7 +280,7 @@ ul.actions a:hover {
 }
 
 ul.navigation a:hover {
-	background-color: #333;
+	background-color: #282828;
 	color: white;
 }
 
@@ -286,11 +300,11 @@ ul.versions li {
 ul.versions li a {
 	display: block;
 	padding: 3px 0px;
-	border-bottom: 1px solid #eee;
+	border-bottom: 1px solid #e9eae1;
 }
 
 ul.versions li a:hover {
-	background-color: #333;
+	background-color: #282828;
 	color: white;
 	padding: 3px 10px;
 	margin: 0 -10px;
@@ -307,7 +321,7 @@ ul.images, ul.images li {
 ul.images a {
 	float: left;
 	margin: 0 10px 10px 0;
-	color: #eee;
+	color: #e9eae1;
 	border: 1px solid;
 }
 
@@ -335,7 +349,7 @@ div.hiddenAction {
 
 div.hiddenAction span {
 	color: #999;
-	border-bottom: 1px solid #eee;
+	border-bottom: 1px solid #e9eae1;
 }
 
 table.items {
@@ -350,7 +364,7 @@ table.items th, table.items td {
 }
 
 table.items th a {
-	color: #aaa;
+	color: #a9aba0;
 	padding: 3px 12px 3px 0;
 }
 
@@ -363,13 +377,13 @@ table.items th a.sort.up {
 }
 
 table.items th.hover {
-	background-color: #eee;
+	background-color: #e9eae1;
 	cursor: hand;
 	cursor: pointer;
 }
 
 table.items td {
-	border-top: 1px solid #eee;
+	border-top: 1px solid #e9eae1;
 }
 
 table.items td a {
@@ -382,7 +396,7 @@ table.items td.delete {
 
 table.items td.delete a {
 	padding: 4px 0;
-	color: #ccc;
+	color: #cdcfc3;
 }
 
 table.items td.delete a:hover {
@@ -390,19 +404,19 @@ table.items td.delete a:hover {
 }
 
 table.items tr.hover {
-	background-color: #333;
+	background-color: #282828;
 	cursor: hand;
 	cursor: pointer;
 }
 
 table.items tr.dragging, table.items tr.dragging td.draggable {
-	background-color: #eee;
+	background-color: #e9eae1;
 }
 
 
 table.items td.draggable, table.items tr.hover td.draggable {
 	background-color: white;
-	color: #ccc;
+	color: #cdcfc3;
 }
 
 table.items td.draggable:hover {
@@ -433,14 +447,14 @@ input.search {
 
 dl#translate_original {
 	width: 540px;
-	background-color: #eee;
+	background-color: #e9eae1;
 	padding: 10px 15px;
 	margin-bottom: 10px;
 }
 
 dl#translate_original dt {
 	font-weight: normal;
-	color: #aaa;
+	color: #a9aba0;
 	float: left;
 	width: 145px;
 	margin-right: 30px;
@@ -469,9 +483,8 @@ div.actions {
 }
 
 form > div {
-	width: 570px;
 	padding: 5px 0;
-	border-bottom: 1px solid #eee;
+	border-bottom: 1px solid #e9eae1;
 }
 
 form div.missing {
@@ -514,7 +527,7 @@ form div div p img {
 }
 
 form textarea {
-	width: 376px;
+	width: 460px;
 }
 
 form input.submit {
@@ -528,7 +541,7 @@ form fieldset {
 }
 
 form span.disabled {
-	color: #ccc;
+	color: #cdcfc3;
 }
 
 span.fileDeleteCheckbox {

@@ -82,7 +82,7 @@ class String {
 		$trimmedString = implode(' ', array_slice($wordsArray, 0, 7));
 				
 		// Only keep 'safe' characters and turn spaces into underscores
-		$match = array('/\s/','/[^a-z\d-_\.\+]/','/_+/','/\.+$/');
+		$match = array('/\s/','/[^a-z\d-_\+]/','/_+/','/\.+$/');
 		$replace = array('_','','_','');
 		$safeString = preg_replace($match, $replace, $trimmedString);
 		
@@ -95,8 +95,8 @@ class String {
 	}
 	
 	function LocalizeNumber($number, $decimals = 1) {
-		global $_JAG;
-		switch ($_JAG['language']) {
+		global $_JAM;
+		switch ($_JAM->language) {
 			case 'fr':
 				return number_format($number, $decimals, ',', '&nbsp;');
 				break;
@@ -107,8 +107,8 @@ class String {
 	}
 		
 	function BytesToString($bytes) {
-		global $_JAG;
-		$strings = $_JAG['strings']['filesizeUnits'];
+		global $_JAM;
+		$strings = $_JAM->strings['filesizeUnits'];
 		
 		if ($bytes == 0) {
 			return '0 '. $strings['kb'];

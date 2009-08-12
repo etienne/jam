@@ -6,6 +6,7 @@ require_once('classes/Filesystem.php');
 require_once('classes/Form.php');
 require_once('classes/HTTP.php');
 require_once('classes/Path.php');
+require_once('classes/Layout.php');
 require_once('classes/Template.php');
 require_once('classes/Query.php');
 require_once('classes/Query.php');
@@ -35,13 +36,14 @@ class Module {
 	var $items;
 	var $item;
 	var $rawData;
+	var $processedData;
 	
 	var $postData = array();
 	var $missingData;
 	var $invalidData;
 	var $fileUploadError;
 	var $files;
-	var $template;
+	var $layout;
 	var $view = array();
 	
 	/*
@@ -49,14 +51,18 @@ class Module {
 	 */
 	
 	function Module($name, $item = '') {
-		global $_JAG;
+		global $_JAM;
 		
 		$this->name = $name;
 		$this->itemID = $item;
 		
 		// Determine whether we are the root module
-		if (!isset($_JAG['rootModule'])) {
+		if (!isset($_JAM->rootModuleName)) {
 			$this->isRoot = true;
+			$_JAM->rootModuleName = $this->name;
+			
+			// Create layout object
+			$this->layout = new Layout();
 		}
 	}
 	
@@ -70,11 +76,12 @@ class Module {
 	}
 	
 	function GetNewModule($name, $item = '', $hasParent = false) {
-		global $_JAG;
-		if (!$_JAG['availableModules'][$name]) {
+		global $_JAM;
+		
+		if (!$_JAM->availableModules[$name]) {
 			trigger_error("Couldn't create new module because '". $name ."' module does not exist", E_USER_ERROR);
 		}
-		$className = $name .'Module';
+		$className = ucfirst($name) .'Module';
 		$classPath = 'modules/'. $name .'/'. $className .'.php';
 		if (Filesystem::FileExistsInIncludePath($classPath)) {
 			// There is a custom module class; load it and create new instance
@@ -94,10 +101,10 @@ class Module {
 	}
 	
 	function ParseConfigFile($moduleName, $iniFile, $processSections = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Determine whether requested module is a custom (app-specific) or engine module
-		$iniFileRoot = in_array($moduleName, $_JAG['appModules']) ? 'app' : 'engine';
+		$iniFileRoot = in_array($moduleName, $_JAM->appModules) ? 'app' : 'engine';
 		
 		// Build path to config file
 		$iniFilePath = $iniFileRoot .'/modules/'. $moduleName .'/'. $iniFile;
@@ -110,16 +117,16 @@ class Module {
 	 */
 	
 	function GetAdminMenuString($module) {
-		global $_JAG;
+		global $_JAM;
 		$config = Module::ParseConfigFile($module, 'config/config.ini');
-		$strings = Module::ParseConfigFile($module, 'strings/'. $_JAG['language'] .'.ini');
+		$strings = Module::ParseConfigFile($module, 'strings/'. $_JAM->language .'.ini');
 		if ($config['hideFromAdmin']) {
 			// Module asks not to show up in menu
 			return false;
-		} elseif ($module == 'users' && $_JAG['project']['singleUser']) {
+		} elseif ($module == 'users' && $_JAM->projectConfig['singleUser']) {
 			// Project is single-user, and we don't want the "users" module to show up in the admin interface
 			return false;
-		} elseif ($config['canView'] && !$_JAG['user']->HasPrivilege($config['canView'])) {
+		} elseif ($config['canView'] && !$_JAM->user->HasPrivilege($config['canView'])) {
 			// User doesn't have sufficient privileges to view the module
 			return false;
 		} elseif ($string = $strings['adminTitle']) {
@@ -153,24 +160,24 @@ class Module {
 	 */
 	
 	function FinishSetup() {
-		global $_JAG;
+		global $_JAM;
 
 		// Check whether this is an app-level or engine-level module
-		$modulePathRoot = in_array($this->name, $_JAG['appModules']) ? 'app' : 'engine';
+		$modulePathRoot = in_array($this->name, $_JAM->appModules) ? 'app' : 'engine';
 		$this->modulePath = $modulePathRoot .'/modules/'. $this->name .'/';
 		
 		// Make sure this module exists
-		if (!$_JAG['availableModules'][$this->name]) {
+		if (!$_JAM->availableModules[$this->name]) {
 			return false;
 		}
 		
 		// Load configuration files
 		$this->config = IniFile::Parse($this->modulePath .'config/config.ini', true);
-		$this->strings = IniFile::Parse($this->modulePath .'strings/'. $_JAG['language'] .'.ini', true);
+		$this->strings = IniFile::Parse($this->modulePath .'strings/'. $_JAM->language .'.ini', true);
 		
 		// Check whether we should disable cache
 		if ($this->config['disableCache']) {
-			$_JAG['cache']->Forbid();
+			$_JAM->cache->Forbid();
 		}
 		
 		// Get info for this module's table, if there is one
@@ -187,10 +194,10 @@ class Module {
 			if ($this->config['useCustomTable']) {
 				$this->schema = $schema;
 			} else {
-				$this->schema = $_JAG['moduleFields'];
+				$this->schema = $_JAM->moduleFields;
 				if ($this->config['keepVersions']) {
 					// Additional fields are needed for versions support
-					$this->schema += $_JAG['versionsSupportFields'];
+					$this->schema += $_JAM->versionsSupportFields;
 				}
 				$this->schema += $schema;
 			}
@@ -210,7 +217,7 @@ class Module {
 					case 'multi':
 						$this->hasMulti = true;
 						$relatedModuleName = $info['relatedModule'];
-						$relatedModuleID = array_search($relatedModuleName, $_JAG['installedModules']);
+						$relatedModuleID = array_search($relatedModuleName, $_JAM->installedModules);
 						$this->multiRelatedModules[$relatedModuleID] = $name;
 						break;
 				}
@@ -218,7 +225,7 @@ class Module {
 		}
 		
 		// Make sure module is installed and get ID for this module
-		if ($this->moduleID = @array_search($this->name, $_JAG['installedModules'])) {
+		if ($this->moduleID = @array_search($this->name, $_JAM->installedModules)) {
 			
 			// Update data if this module has a table and we have the right POST data
 			if ($this->schema && $_POST['module'] == $this->name) {
@@ -239,12 +246,12 @@ class Module {
 	}
 	
 	function Install() {
-		global $_JAG;
+		global $_JAM;
 		
 		// Make sure table has not already been installed
 		if ($installedModules = Query::SimpleResults('_modules')) {
-			$_JAG['installedModules'] = $installedModules;
-			if (in_array($this->name, $_JAG['installedModules'])) {
+			$_JAM->installedModules = $installedModules;
+			if (in_array($this->name, $_JAM->installedModules)) {
 				return true;
 			}
 		}
@@ -262,7 +269,7 @@ class Module {
 				// Check whether we need to install other modules first
 				if (
 					($relatedModule = $info['relatedModule']) &&
-					!in_array($this->name, $_JAG['installedModules']) &&
+					!in_array($this->name, $_JAM->installedModules) &&
 					$relatedModule != $this->name
 				) {
 					$module = Module::GetNewModule($relatedModule);
@@ -297,7 +304,7 @@ class Module {
 			$this->moduleID = Database::GetLastInsertID();
 			
 			// Add admin path to _paths table FIXME: Untested
-			$adminModuleID = array_search('admin', $_JAG['installedModules']);
+			$adminModuleID = array_search('admin', $_JAM->installedModules);
 			if (!Path::Insert('admin/'. $this->name, $adminModuleID, $this->moduleID)) {
 				trigger_error("Couldn't add admin path for module ". $this->name, E_USER_ERROR);
 				return false;
@@ -323,27 +330,27 @@ class Module {
 	}
 	
 	function CanView() {
-		global $_JAG;
+		global $_JAM;
 		if ($this->config['canView']) {
-			return $_JAG['user']->HasPrivilege($this->config['canView']);
+			return $_JAM->user->HasPrivilege($this->config['canView']);
 		} else {
 			return true;
 		}
 	}
 	
 	function CanInsert() {
-		global $_JAG;
+		global $_JAM;
 		if ($this->config['canInsert']) {
-			return $_JAG['user']->HasPrivilege($this->config['canInsert']);
+			return $_JAM->user->HasPrivilege($this->config['canInsert']);
 		} else {
 			return true;
 		}
 	}
 	
 	function CanDelete() {
-		global $_JAG;
+		global $_JAM;
 		if ($this->config['canDelete']) {
-			return $_JAG['user']->HasPrivilege($this->config['canDelete']);
+			return $_JAM->user->HasPrivilege($this->config['canDelete']);
 		} else {
 			return true;
 		}
@@ -366,7 +373,7 @@ class Module {
 	}
 	
 	function FetchItem($id) {
-		global $_JAG;
+		global $_JAM;
 		
 		if ($this->config['keepVersions']) {
 			$where = '('. $this->name .'.master = '. $id .' OR '.
@@ -389,7 +396,7 @@ class Module {
 	}
 	
 	function FetchItems($queryParams = '') {
-		global $_JAG;
+		global $_JAM;
 		
 		$query = new Query();
 		$query->AddFrom($this->name);
@@ -418,7 +425,7 @@ class Module {
 			$query->AddFrom($localizedTable);
 			$where = array(
 				$localizedTable .'.item = '. $this->name .'.id',
-				$localizedTable .".language = '". $_JAG['language'] ."'"
+				$localizedTable .".language = '". $_JAM->language ."'"
 			);
 			$query->AddWhere($where);
 		}
@@ -429,7 +436,7 @@ class Module {
 				$queryParams['fields'][] = $name;
 			}
 		}
-
+		
 		foreach($this->schema as $name => $info) {
 			// Manually remove multi fields from query; they will be processed anyway (possibly kludgy)
 			if ($info['type'] == 'multi') {
@@ -499,35 +506,34 @@ class Module {
 		}
 		
 		// Debug query:
-	//	dp($query->GetQueryString());
+		//dp($query->GetQueryString());
 		
 		// Fetch actual module data
-		if ($dataArray = $query->GetArray()) {
-			
+		if ($this->rawData = $query->GetArray()) {
 			// Load data for 'multi' fields
 			if ($this->hasMulti) {
 				$where = 'frommodule = '. $this->moduleID;
 				if ($multiArray = Query::FullResults('_relationships', $where)) {
-					foreach($dataArray as $id => $item) {
+					foreach($this->rawData as $id => $item) {
 						foreach($multiArray as $multiData) {
 							if($multiData['fromid'] == $id) {
-								$dataArray[$id][$this->multiRelatedModules[$multiData['tomodule']]][] = $multiData['toid'];
+								$this->rawData[$id][$this->multiRelatedModules[$multiData['tomodule']]][] = $multiData['toid'];
 							}
 						}
 					}
 				}
 			}
 			
-			// Keep raw data from database (with data from multi fields)
-			$this->rawData = $dataArray;
+			// Make a copy of the data for processing so we can keep the raw data available
+			$this->processedData = $this->rawData;
 
 			// Post-process data
 			foreach($this->schema as $name => $info) {
-				foreach ($dataArray as $id => $data) {
-					if ($dataArray[$id][$name]) {
+				foreach ($this->processedData as $id => $data) {
+					if ($this->processedData[$id][$name]) {
 						switch ($info['type']) {
 							case 'string':
-								$dataArray[$id][$name] = TextRenderer::SmartizeText($data[$name]);
+								$this->processedData[$id][$name] = TextRenderer::SmartizeText($data[$name]);
 								break;
 							case 'text':
 							case 'shorttext':
@@ -535,10 +541,10 @@ class Module {
 									// Render text using TextRenderer if it's not a WYSIWYG field
 									if (strstr($data[$name], "\n") !== false) {
 										// String contains newline characters; format as multiline text
-										$dataArray[$id][$name] = TextRenderer::TextToHTML($data[$name]);
+										$this->processedData[$id][$name] = TextRenderer::TextToHTML($data[$name]);
 									} else {
 										// String is a single line; format as single line
-										$dataArray[$id][$name] = TextRenderer::SmartizeText($data[$name]);
+										$this->processedData[$id][$name] = TextRenderer::SmartizeText($data[$name]);
 									}
 								}
 								break;
@@ -546,20 +552,26 @@ class Module {
 							case 'timestamp':
 							case 'date':
 							case 'time':
-								$dataArray[$id][$name] = new Date($data[$name]);
+								$this->processedData[$id][$name] = new Date($data[$name]);
 								break;
 							case 'file':
-								$dataArray[$id][$name] = $this->NestModule('files', $data[$name]);
+								$this->processedData[$id][$name] = $this->NestModule('files', $data[$name]);
 								break;
 						}
 					}
 				}
 			}
+			
+			// Subclasses can provide a method to further format data
+			if (method_exists($this, 'FormatData')) {
+				$this->FormatData();
+			}
+			
 			if ($this->items) {
 				// If $this->items is already set, don't overwrite it
-				return $dataArray;
+				return $this->processedData;
 			} else {
-				return $this->items = $dataArray;
+				return $this->items = $this->processedData;
 			}
 		} else {
 			return false;
@@ -571,114 +583,148 @@ class Module {
 		return $this->item = $data;
 	}
 	
+	function SetLayout($name) {
+		global $_JAM;
+		$this->layout->SetLayout($name .'.'. $_JAM->mode);
+	}
+	
 	function Display() {
-		global $_JAG;
-
+		global $_JAM;
+		
 		// Start output buffering
 		ob_start('mb_output_handler');
 		
-		// Determine whether we're looking at a single item in the module
-		if ($this->itemID) {
-			// Try to load the item view
-			if ($this->LoadView('item')) {
-				$viewDidLoad = true;
-			}
+		// Determine layout
+		if (isset($this->layout)) {
+			$layoutName = $this->config['layout'];
+			if (!$layoutName) $layoutName = 'default';
+			$layoutFile = $layoutName .'.'. $_JAM->mode;
+			$this->layout->SetLayout($layoutFile);
 		}
+		
+		// Determine whether we're a nested module
+		if ($this->parentModule->name) {
+			// Try to load view bearing parent module's name
+			$viewDidLoad = $this->LoadView($this->parentModule->name);
+		}
+		
+		// Determine whether we're looking at a single item in the module
+		if (!$viewDidLoad && $this->itemID) {
+			$viewDidLoad = $this->LoadView('item');
+		}
+		
 		if (!$viewDidLoad) {
 			$this->LoadView('default');
 		}
 		
-		// Wrap into template if one was specified
+		// Wrap into layout if we're the root module
 		$buffer = ob_get_clean();
 		if ($this->isRoot) {
-			$templateName = $this->template ? $this->template : $this->config['template'];
-			if (!$templateName) $templateName = 'default';
-			$templateFile = $templateName .'.'. $_JAG['mode'];
-			$template = new Template($templateFile);
-			$template->Display($buffer);
+			$this->layout->Display($buffer);
 		} else {
 			print $buffer;
 		}
 	}
 	
 	function LoadView($view) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Make sure we have sufficient privileges
 		if (!$this->CanView()) {
 			return false;
 		}
-
-		if (!$view) return false;
 		
-		// Get parent module's name
-		$parentName = $this->parentModule->name;
-		
-		// Determine view
-		$viewDirPath = $this->modulePath .'views/';
-		if ($parentName) {
-			$nestedViewPath = $viewDirPath. $parentName .'.'. $view;
-		}
-		$viewPath = $viewDirPath . $view;
-		$defaultView = $viewDirPath .'default';
-		if ($parentName == 'admin') {
-			// If we're in admin mode, only try to load admin views, and only for the required module
-			$adminViewPath = 'engine/modules/admin/views/'. $view;
-			if (file_exists($nestedViewPath) && $parentName == 'admin') {
-				$viewDir = $nestedViewPath;
-			} elseif (file_exists($adminViewPath)) {
-				$viewDir = $adminViewPath;
-			}
-		} else {
-			// If we're not in admin mode, try to load a regular view
-			if (file_exists($nestedViewPath)) {
-				$viewDir = $nestedViewPath;
-			} elseif (file_exists($viewPath)) {
-				$viewDir = $viewPath;
-			} elseif (file_exists($defaultView)) {
-				$viewDir = $defaultView;
-			}
-		}
-
-		if (!$viewDir) {
+		// Make sure a view was specified
+		if (!$view) {
 			return false;
 		}
 		
-		// Fetch module data if applicable
-		if ($this->schema && !$this->items) {
-			if ($this->itemID) {
-				$this->FetchItem($this->itemID);
-			} elseif ($queryParams = IniFile::Parse($viewDir . '/query.ini', true)) {
-				$this->FetchItems($queryParams);
+		// Try to load module data if an item ID is specified
+		if ($this->schema && $this->itemID && !$this->items) {
+			$this->FetchItem($this->itemID);
+		}
+		
+		// Set a few variables that we'll need later
+		$controllerMethodSuffix = 'ViewController';
+		$moduleViewsDir = $this->modulePath .'views/';
+		$viewFileSuffix = '.'. $_JAM->mode . '.php';
+
+		// Determine controller method name
+		$controllerMethod = ucfirst($view) . $controllerMethodSuffix;
+
+		// Check whether we're in admin mode; that's a special case
+		if ($_JAM->rootModuleName == 'admin') {
+			// Run controller method if available
+			$adminControllerMethod = 'Admin'. $controllerMethod;
+			if (method_exists($this, $adminControllerMethod)) {
+				$this->$adminControllerMethod();
+				$methodDidRun = true;
+			} elseif (method_exists($_JAM->rootModule, $adminControllerMethod)) {
+				$_JAM->rootModule->$adminControllerMethod();
+				$methodDidRun = true;
+			}
+			
+			// Determine path to view file
+			$viewFilename = 'admin_'. $view . $viewFileSuffix;
+			$moduleViewPath = $moduleViewsDir . $viewFilename;
+			$adminViewPath = $_JAM->rootModule->modulePath .'views/'. $viewFilename;
+			if (file_exists($moduleViewPath)) {
+				$viewPath = $moduleViewPath;
+			} elseif (file_exists($adminViewPath)) {
+				$viewPath = $adminViewPath;
+			}
+		} else {
+			// Run controller method if available
+			if (method_exists($this, $controllerMethod)) {
+				$this->$controllerMethod();
+				$methodDidRun = true;
+			}
+			
+			// Determine path to view file
+			$requestedViewPath = $moduleViewsDir . $view . $viewFileSuffix;
+			if (file_exists($requestedViewPath)) {
+				$viewPath = $requestedViewPath;
 			}
 		}
 		
-		// Run initialization script, if present
-		$initScript = $viewDir .'/init.php';
-		if (file_exists($initScript)) {
-			include $initScript;
+		// If no controller method has run and no view file has been found, abort process
+		if (!$methodDidRun && !$viewPath) {
+			return false;
 		}
 		
 		// Load module data into view variables
-		if ($this->item) extract($this->item);
-		if ($this->items) $this->view['items'] = $this->items;
+		if ($this->item) {
+			// If we have a single item, load directly into local symbol table
+			extract($this->item);
+		}
+		if ($this->items) {
+			// If we have multiple items, load as an array into $items
+			$this->view['items'] = $this->items;
+		}
 		
 		// Load view variables into local symbol table
 		extract($this->view);
 		
-		// Load template for requested mode, if it exists
-		$templateForRequestedMode = $viewDir .'/'. $_JAG['requestedMode'] .'.php';
-		$defaultTemplate = $viewDir . '/html.php';
-		if (file_exists($templateForRequestedMode)) {
-			// Template exists for requested mode; load it and declare mode
-			include $templateForRequestedMode;
-			$_JAG['mode'] = $_JAG['requestedMode'];
-		} elseif (file_exists($defaultTemplate)) {
-			// Template for requested mode doesn't exist; load default HTML template instead
-			include $defaultTemplate;
-			$_JAG['mode'] = 'html';
+		// Include view file
+		if ($viewPath) {
+			include $viewPath;
 		}
+
 		return true;
+	}
+	
+	function LoadViewInLayoutVariable($view) {
+		global $_JAM;
+		
+		ob_start('mb_output_handler');
+		$this->LoadView($view);
+		$viewContent = ob_get_clean();
+		
+		// Add to layout
+		$this->layout->AddVariable($view, $viewContent);
+		
+		// Add to template
+		$_JAM->AddTemplateVariable($view, $viewContent);
 	}
 	
 	function GetRelatedArray($field) {
@@ -752,7 +798,7 @@ class Module {
 	}
 	
 	function AutoForm($fieldsArray = false, $hiddenFields = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Create Form object
 		if (!$form = $this->GetForm()) return false;
@@ -761,32 +807,32 @@ class Module {
 		// Include language selection menu if applicable
 		if (
 			!$this->config['languageAgnostic'] &&
-			(count($_JAG['project']['languages']) > 1) &&
+			(count($_JAM->projectConfig['languages']) > 1) &&
 			!($fieldsArray && !@in_array('language', $fieldsArray))
 		) {
 			if ($this->item) {
 				print $form->Hidden('language');
 			} else {
-				foreach ($_JAG['project']['languages'] as $language) {
-					$languagesArray[$language] = $_JAG['strings']['languages'][$language];
+				foreach ($_JAM->projectConfig['languages'] as $language) {
+					$languagesArray[$language] = $_JAM->strings['languages'][$language];
 				}
-				print $form->Popup('language', $languagesArray, $_JAG['strings']['fields']['language']);
+				print $form->Popup('language', $languagesArray, $_JAM->strings['fields']['language']);
 			}
 		}
 		
 		// Include sortIndex field if applicable
 		if ($this->config['allowSort']) {
-			print $form->Field('sortIndex', '3', $_JAG['strings']['fields']['sortIndex']);
+			print $form->Field('sortIndex', '3', $_JAM->strings['fields']['sortIndex']);
 		}
 		
 		foreach ($this->schema as $name => $info) {
 			// Don't include basic module fields
-			if (!$this->config['useCustomTable'] && $_JAG['moduleFields'][$name]) {
+			if (!$this->config['useCustomTable'] && $_JAM->moduleFields[$name]) {
 				continue;
 			}
 			
 			// Don't include versions support fields
-			if ($this->config['keepVersions'] && $_JAG['versionsSupportFields'][$name]) {
+			if ($this->config['keepVersions'] && $_JAM->versionsSupportFields[$name]) {
 				continue;
 			}
 			
@@ -806,7 +852,7 @@ class Module {
 		
 		// Display related modules if we have item data
 		if ($this->itemID) {
-			foreach ($_JAG['installedModules'] as $module) {
+			foreach ($_JAM->installedModules as $module) {
 				// First check whether we have a view configured for related module display
 				if (
 					($relatedModuleSchema = Module::ParseConfigFile($module, 'config/schema.ini', true)) &&
@@ -814,7 +860,7 @@ class Module {
 				) {
 					foreach($relatedModuleSchema as $field => $info) {
 						if ($info['relatedModule'] == $this->name) {
-							$relatedModule = $this->parentModule->NestModule($module);
+ 							$relatedModule = Module::GetNewModule($module);
 							// Load all fields
 							$queryParams = array(
 								'fields' => $relatedModuleKeyQuery['fields'],
@@ -953,7 +999,7 @@ class Module {
 	}
 	
 	function ProcessData() {
-		global $_JAG;
+		global $_JAM;
 		
 		// Validate data; this fills $this->postData
 		$this->ValidateData();
@@ -964,7 +1010,7 @@ class Module {
 		}
 		
 		// Clear cache entirely; very brutal but will do for now
-		$_JAG['cache']->Clear();
+		$_JAM->cache->Clear();
 		
 		// Run custom action method if available
 		if ($action = $_POST['action']) {
@@ -984,7 +1030,7 @@ class Module {
 		// Determine what we need to insert from what was submitted
 		foreach ($this->schema as $name => $info) {
 			// Omit fields which we can't edit
-			if ($info['canEdit'] && !$_JAG['user']->HasPrivilege($info['canEdit'])) {
+			if ($info['canEdit'] && !$_JAM->user->HasPrivilege($info['canEdit'])) {
 				continue;
 			}
 			
@@ -1003,8 +1049,8 @@ class Module {
 				// This is a standard table with special fields
 
 				// If user is logged in, insert user ID
-				if ($_JAG['user']->id) {
-					$insertData['user'] = $_JAG['user']->id;
+				if ($_JAM->user->id) {
+					$insertData['user'] = $_JAM->user->id;
 				}
 			}
 
@@ -1023,7 +1069,7 @@ class Module {
 				} else {
 					// Post mode
 					if (!$this->config['useCustomTable']) {
-						$insertData['created'] = $_JAG['databaseTime'];
+						$insertData['created'] = $_JAM->databaseTime;
 					}
 					if (!Database::Insert($this->name, $insertData)) {
 						trigger_error("Couldn't insert into module ". $this->name, E_USER_ERROR);
@@ -1128,7 +1174,7 @@ class Module {
 						foreach ($this->postData[$name] as $targetID) {
 							// Insert each item into _relationships table
 							$targetModuleName = $info['relatedModule'];
-							$targetModuleID = array_search($targetModuleName, $_JAG['installedModules']);
+							$targetModuleID = array_search($targetModuleName, $_JAM->installedModules);
 							$params = array(
 								'frommodule' => $this->moduleID,
 								'fromid' => $insertID,
@@ -1152,7 +1198,7 @@ class Module {
 		$anchor = $this->config['redirectToAnchor'][$this->parentModule->name];
 		
 		// Reload page
-		if ($_JAG['rootModuleName'] == 'admin' || !$this->config['postSubmitRedirect']) {
+		if ($_JAM->rootModuleName == 'admin' || !$this->config['postSubmitRedirect']) {
 			HTTP::ReloadCurrentURL('?m=updated'. ($anchor ? '#' . $anchor : ''));
 		} else {
 			HTTP::RedirectLocal($this->config['postSubmitRedirect']);
@@ -1175,13 +1221,13 @@ class Module {
 	}
 	
 	function GetPath() {
-		global $_JAG;
+		global $_JAM;
 		
 		// Only run this method if 'autoPaths' switch is set
 		if (!$this->config['autoPaths']) return false;
 		
 		if ($keyString = $this->item[$this->keyFieldName]) {
-			$parentPath = $this->config['path'][$_JAG['language']];
+			$parentPath = $this->config['path'][$_JAM->language];
 			return ($parentPath ? $parentPath : $this->name) .'/'. String::PrepareForURL($keyString);
 		} else {
 			trigger_error("Couldn't get path; probably lacking item data in module object", E_USER_ERROR);
@@ -1189,7 +1235,7 @@ class Module {
 	}
 	
 	function UpdatePath($id = null) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Check whether we have data
 		if (!$this->item) {
@@ -1197,13 +1243,13 @@ class Module {
 			$itemID = $_POST['master'] ? $_POST['master'] : $id;
 			// FIXME: Again, fucking kludge for translations.
 			if ($_POST['language']) {
-				$originalLanguage = $_JAG['language'];
-				$_JAG['language'] = $_POST['language'];
+				$originalLanguage = $_JAM->language;
+				$_JAM->language = $_POST['language'];
 			}
 			if (!$this->FetchItem($itemID)) {
 				return false;
 			}
-			if ($originalLanguage) $_JAG['language'] = $originalLanguage;
+			if ($originalLanguage) $_JAM->language = $originalLanguage;
 		}
 		
 		$safeInsert = $this->config['forbidObsoletePaths'] ? false : true;

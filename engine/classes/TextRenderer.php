@@ -11,7 +11,7 @@ class TextRenderer {
 
 	function FormatText ($string) {
 		// Look for Markdown preference
-		if ($_JAG['project']['useMarkdown']) {
+		if ($_JAM->projectConfig['useMarkdown']) {
 			require_once('engine/libraries/markdown.php');
 			return Markdown($string);
 		}
@@ -42,17 +42,17 @@ class TextRenderer {
 	}
 
 	function SmartizeText ($string, $stringLanguage = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Look for Markdown preference
-		if ($_JAG['project']['useMarkdown']) {
+		if ($_JAM->projectConfig['useMarkdown']) {
 			require_once('engine/libraries/smartypants.php');
 			return SmartyPants($string);
 		}
 		
 		// If language is not specified, use default language
 		if (!$stringLanguage) {
-			$stringLangage = $_JAG['defaultLanguage'];
+			$stringLangage = $_JAM->defaultLanguage;
 		}
 		
 		$match = array (
@@ -97,10 +97,10 @@ class TextRenderer {
 	}
 
 	function TextToHTML ($string, $stringLanguage = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Look for Markdown preference
-		if ($_JAG['project']['useMarkdown']) {
+		if ($_JAM->projectConfig['useMarkdown']) {
 			require_once('engine/libraries/smartypants.php');
 			require_once('engine/libraries/markdown.php');
 			return SmartyPants(Markdown($string));

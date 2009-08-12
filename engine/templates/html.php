@@ -1,8 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
     "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="<?= $_JAG['language'] ?>" >
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="<?= $_JAM->language ?>" >
 <head>
-	<title><?= $_JAG['title'] ?></title>
+	<title><?= $_JAM->title ?></title>
 	<? if ($css): ?><? foreach ($css as $stylesheet): ?>
 	<link rel="stylesheet" href="<?= $stylesheet['file'] ?>" type="text/css" media="<?= $stylesheet['media'] ?>" />
 	<? endforeach; ?><? endif; ?>
@@ -13,7 +13,7 @@
 	<meta name="<?= $attributes['name'] ?>" content="<?= $attributes['content'] ?>" />
 	<? endforeach; ?><? endif; ?>
 </head>
-<body>
+<body<?= $bodyClass ? ' class="'. $bodyClass .'"' : '' ?>>
 
 	<?= $body ?>
 

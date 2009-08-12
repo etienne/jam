@@ -13,12 +13,12 @@ class Date {
 	 */
 	
 	function Date ($time, $isLocal = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		if ($_COOKIE['timezone']) {
 			$this->displayTimezone = $_COOKIE['timezone'];
 		} else {
-			$this->displayTimezone = $_JAG['project']['defaultDisplayTime'];
+			$this->displayTimezone = $_JAM->projectConfig['defaultDisplayTime'];
 		}
 		
 		if (strpos($time, ' ') !== false) {
@@ -38,15 +38,15 @@ class Date {
 		if ($isLocal) {
 			$this->timestamp = $timestamp;
 		} else {
-			$timeOffset = ($this->displayTimezone - $_JAG['server']['serverTime']) * 60 * 60;
+			$timeOffset = ($this->displayTimezone - $_JAM->serverConfig['serverTime']) * 60 * 60;
 			$this->timestamp = $timestamp + $timeOffset;
 		}
 		
 		// Determine GMT time
-		$this->gmtTimestamp = $this->timestamp + (-$_JAG['server']['serverTime'] * 60 * 60);
+		$this->gmtTimestamp = $this->timestamp + (-$_JAM->serverConfig['serverTime'] * 60 * 60);
 		
 		// Get local database time
-		$this->now = strtotime($_JAG['databaseTime']);
+		$this->now = strtotime($_JAM->databaseTime);
 	}
 	
 	/*
@@ -108,16 +108,16 @@ class Date {
 	}
 	
 	function DateRange($days) {
-		global $_JAG;
+		global $_JAM;
 		$endTimestamp = $this->timestamp + (($days - 1) * 24 * 60 * 60);
 		$endDate = new Date($endTimestamp);
 		
 		$startDay = $this->GetDay();
-		$startMonth = $_JAG['strings']['months'][$this->GetMonth()];
+		$startMonth = $_JAM->strings['months'][$this->GetMonth()];
 		$startYear = $this->GetYear();
 		
 		$endDay = $endDate->GetDay();
-		$endMonth = $_JAG['strings']['months'][$endDate->GetMonth()];
+		$endMonth = $_JAM->strings['months'][$endDate->GetMonth()];
 		$endYear = $endDate->GetYear();
 		
 		// Check whether date range begins and ends in the same month and year
@@ -125,7 +125,7 @@ class Date {
 		$sameYear = ($startYear == $endYear);
 		
 		// Set date separator
-		$separator = ' '. $_JAG['strings']['words']['to'] .' ';
+		$separator = ' '. $_JAM->strings['words']['to'] .' ';
 		
 		// If dates aren't in the same year, just use LongDate() for both the start and end date
 		if (!$sameYear) {
@@ -133,7 +133,7 @@ class Date {
 		}
 		
 		// Otherwise, format date according to language
-		switch ($_JAG['language']) {
+		switch ($_JAM->language) {
 			case 'en':
 				if ($sameMonth) {
 					return $startMonth .' '. $startDay . $separator . $endDay .' '. $startYear;
@@ -154,11 +154,11 @@ class Date {
 	}
 	
 	function LongDate() {
-		global $_JAG;
+		global $_JAM;
 		$day = date('j',$this->timestamp);
-		$month = $_JAG['strings']['months'][(int) date('n',$this->timestamp)];
+		$month = $_JAM->strings['months'][(int) date('n',$this->timestamp)];
 		$year = date('Y',$this->timestamp);
-		switch ($_JAG['language']) {
+		switch ($_JAM->language) {
 			case 'en':
 				return $month . ' ' . $day . ' ' . $year;
 				break;
@@ -170,19 +170,19 @@ class Date {
 	
 	function SmartDate() {
 		/* Takes a UNIX-style timestamp and return a smartly formatted, localized date */
-		global $_JAG;
+		global $_JAM;
 		$today = mktime(0, 0, 0, date("m",$this->now), date("d",$this->now), date("Y",$this->now));
 		$theDay = mktime(0, 0, 0, date("m",$this->timestamp), date("d",$this->timestamp), date("Y",$this->timestamp));
 		$daysOffset = ($today - $theDay) / (60 * 60 * 24);
 		if ($daysOffset === 0) {
-			return $_JAG['strings']['relativeDates']['today'];
+			return $_JAM->strings['relativeDates']['today'];
 		} elseif ($daysOffset == 1) {
-			return $_JAG['strings']['relativeDates']['yesterday'];
+			return $_JAM->strings['relativeDates']['yesterday'];
 		} elseif ($daysOffset < 30 * 11) {
 			// Omit year if less than ~11 months have passed
 			$day = date('j', $this->timestamp);
-			$month = $_JAG['strings']['months'][(int) date('n', $this->timestamp)];
-			switch ($_JAG['language']) {
+			$month = $_JAM->strings['months'][(int) date('n', $this->timestamp)];
+			switch ($_JAM->language) {
 				case 'en':
 					return $month .' '. $day;
 					break;
@@ -196,7 +196,7 @@ class Date {
 	}
 	
 	function SmartDateAndTime() {
-		global $_JAG;
+		global $_JAM;
 		return $this->SmartDate() .', '. $this->Time24();
 	}
 	
@@ -230,8 +230,8 @@ class Date {
 	}
 	
 	function DatabaseTimestamp() {
-		global $_JAG;
-		$timeOffset = ($_JAG['server']['serverTime'] - $this->displayTimezone) * 60 * 60;
+		global $_JAM;
+		$timeOffset = ($_JAM->serverConfig['serverTime'] - $this->displayTimezone) * 60 * 60;
 		$databaseTime = $this->timestamp + $timeOffset;
 		return date('Y-m-d H:i:s', $databaseTime);
 	}

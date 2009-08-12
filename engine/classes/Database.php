@@ -101,7 +101,7 @@ class Database {
 	}
 	
 	function CreateTable ($name, $params) {
-		global $_JAG;
+		global $_JAM;
 		foreach ($params as $field => $info) {
 			if (is_array($info)) {
 				// If given an array, use value of 'type' key
@@ -114,26 +114,44 @@ class Database {
 			$defaultString = isset($default) ? ' DEFAULT '. $default : '';
 			
 			// Make sure given type exists before adding the field
-			if ($_JAG['fieldTypes'][$type]) {
-				$fields[] = $field .' '. $_JAG['fieldTypes'][$type] . $defaultString;
+			if ($_JAM->fieldTypes[$type]) {
+				$fields[] = $field .' '. $_JAM->fieldTypes[$type] . $defaultString;
 				if (is_array($info) && $info['relatedModule']) {
 					// Add foreign keys
 					$indexes[] = $field;
-					$foreignFields[$field] = $info['relatedModule'];
+					$foreignFields[$field] = array(
+						'table' => $info['relatedModule'],
+						'deleteAction' => $info['relatedDeleteAction']
+					);
 				}
 			}
 		}
 		$fieldDefinitions = implode(', ', $fields);
-		if ($_JAG['project']['databaseTableType'] == 'myisam') {
+		if ($_JAM->projectConfig['databaseTableType'] == 'myisam') {
 			// Foreign keys are discarded for MyISAM tables
 			$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions .')';			
 		} else {
 			// Default is InnoDB
 			if ($foreignFields) {
 				$foreignKeysString = ', INDEX ('. implode(', ', $indexes) .')';
-				foreach ($foreignFields as $field => $table) {
-					$foreignKeysString .= ', FOREIGN KEY ('. $field .') REFERENCES '. $table .' (id)';
-					$foreignKeysString .= ' ON DELETE RESTRICT ON UPDATE CASCADE';
+				foreach ($foreignFields as $field => $info) {
+					$foreignKeysString .= ', FOREIGN KEY ('. $field .') REFERENCES '. $info['table'] .' (id)';
+					switch ($info['deleteAction']) {
+						case 'cascade':
+							$deleteAction = 'CASCADE';
+							break;
+						case 'setnull':
+							$deleteAction = 'SET NULL';
+							break;
+						case 'noaction':
+							$deleteAction = 'NO ACTION';
+							break;
+						case 'restrict':
+						default:
+							$deleteAction = 'RESTRICT';
+							break;
+					}
+					$foreignKeysString .= ' ON DELETE '. $deleteAction .' ON UPDATE CASCADE';
 				}
 			}
 			$query = 'CREATE TABLE IF NOT EXISTS '. $name .' ('. $fieldDefinitions . $foreignKeysString .') ENGINE=INNODB';

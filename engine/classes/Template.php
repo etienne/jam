@@ -5,7 +5,13 @@ class Template {
 	var $variables;
 	var $templateFile;
 	
-	function Template($name) {
+	function Template($name = '') {
+		if ($name) {
+			$this->SetTemplate($name);
+		}
+	}
+	
+	function SetTemplate($name) {
 		// Make sure requested template exists
 		$requestedTemplate = 'templates/'. $name .'.php';
 		if (Filesystem::FileExistsInIncludePath($requestedTemplate)) {
@@ -15,26 +21,26 @@ class Template {
 		}
 	}
 	
-	function NewVariable($name, $value) {
+	function AddVariable($name, $value) {
 		$this->variables[$name] = $value;
 	}
 	
-	function AppendVariable($name, $value) {
-		if (isset($this->variables[$name]) && !is_array($this->variables[$name])) {
-			// Variable is set but is not already an array; convert into an array
-			$previousValue = $this->variables[$name];
-			$this->variables[$name] = array($previousValue);
+	function AddVariables($array) {
+		foreach ($array as $key => $value) {
+			$this->AddVariable($key, $value);
 		}
-		$this->variables[$name][] = $value;
 	}
 	
-	function Display($body) {
-		global $_JAG;
+	function GetOutput($body) {
+		global $_JAM;
+		
+		// Start output buffering
+		ob_start('mb_output_handler');
 		
 		// Make sure we have a valid template file
 		if ($this->templateFile) {
 			// If 'body' variable is not set, use $body
-			if (!$this->variable['body']) {
+			if (!$this->variables['body']) {
 				$this->variables['body'] = $body;
 			}
 
@@ -42,9 +48,7 @@ class Template {
 			extract($this->variables);
 
 			// Load template file
-			if (include($this->templateFile)) {
-				return true;
-			} else {
+			if (!include($this->templateFile)) {
 				trigger_error("Couldn't display template $this->templateFile", E_USER_ERROR);
 				return false;
 			};
@@ -53,6 +57,12 @@ class Template {
 			print $body;
 		}
 		
+		// Return buffer
+		return ob_get_clean();
+	}
+	
+	function Display($body) {
+		print $this->GetOutput($body);
 	}
 	
 }

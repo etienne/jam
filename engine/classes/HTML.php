@@ -6,7 +6,7 @@ require_once('classes/TextRenderer.php');
 class HTML {
 	
 	function Element ($elementName, $argument1 = false, $argument2 = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		if (is_array($argument1)) {
 			// The first argument is an array and represents the element's attributes
@@ -29,7 +29,7 @@ class HTML {
 		
 		// Some elements can be empty and self-closed
 		$selfClosingElements = array('base', 'link', 'meta', 'hr', 'br', 'img', 'embed', 'param', 'area', 'col', 'input');
-		$selfClose = (!$_JAG['project']['useHTML4'] && !$content && in_array($elementName, $selfClosingElements));
+		$selfClose = (!$_JAM->projectConfig['useHTML4'] && !$content && in_array($elementName, $selfClosingElements));
 
 		return '<'. $elementName . $attributesString . ($selfClose ? ' />' : '>') . $content . $closeTag;
 	}
@@ -52,7 +52,7 @@ class HTML {
 	}
 	
 	function Image ($path, $alt, $attributes = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Check whether $path is an absolute URL
 		if (String::IsURL($path)) {

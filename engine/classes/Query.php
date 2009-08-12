@@ -297,7 +297,9 @@ class Query {
 	function GetPrimaryKeyColumn() {
 		if ($result = $this->GetResult()) {
 			while ($fieldInfo = mysql_fetch_field($this->GetResult())) {
-				if ($fieldInfo->primary_key) {
+				/* FIXME: We should never check for field name here, this is a workaround to a strange bug where
+				the object returned by mysql_fetch_field() does not correctly report fields as primary key. */
+				if ($fieldInfo->primary_key || $fieldInfo->name == 'id') {
 					return $fieldInfo->name;
 				}
 			}

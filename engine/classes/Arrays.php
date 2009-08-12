@@ -3,7 +3,7 @@
 class Arrays {
 
 	function GetListString ($array, $or = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		$length = count($array);
 		$i = 1;
@@ -14,7 +14,7 @@ class Arrays {
 					$output .= '';
 					break;
 				case 1:
-					$output .= ' '. ($or ? $_JAG['strings']['words']['or'] : $_JAG['strings']['words']['and']) .' ';
+					$output .= ' '. ($or ? $_JAM->strings['words']['or'] : $_JAM->strings['words']['and']) .' ';
 					break;
 				default:
 					$output .= ', ';

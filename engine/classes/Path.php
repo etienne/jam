@@ -6,11 +6,11 @@ require_once('classes/String.php');
 class Path {
 
 	function Insert($path, $module, $item, $safeInsert = true, $language = false) {
-		global $_JAG;
+		global $_JAM;
 		
 		// Use default language if none is provided
 		if (!$language) {
-			$language = $_JAG['defaultLanguage'];
+			$language = $_JAM->defaultLanguage;
 		}
 		
 		// Disable all paths that represent exactly the same resource
@@ -32,7 +32,7 @@ class Path {
 		$path = str_replace(' ', '%20', $path);
 		
 		// Check whether path already exists
-		if ($duplicate = $_JAG['paths'][$path]) {
+		if ($duplicate = $_JAM->paths[$path]) {
 			// Path already exists
 			if ($duplicate['module'] == $module && $duplicate['item'] == $item && $duplicate['language'] == $language) {
 				// This path represents the same resource; enable it and we're done
@@ -48,7 +48,7 @@ class Path {
 					// We don't want to overwrite the existing path; find the next unique path
 					$basePath = $path;
 					$i = 1;
-					while ($_JAG['paths'][$path] && $i++ < 999) {
+					while ($_JAM->paths[$path] && $i++ < 999) {
 						$path = $basePath .'_'. $i;
 					}
 				} else {
