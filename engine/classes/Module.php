@@ -529,6 +529,10 @@ class Module {
 
 			// Post-process data
 			foreach($this->schema as $name => $info) {
+				if ($info['relatedArray']) {
+					// Fetch related array if one was specified for this field
+					$relatedArray = $this->GetRelatedArray($name);
+				}
 				foreach ($this->processedData as $id => $data) {
 					if ($this->processedData[$id][$name]) {
 						switch ($info['type']) {
@@ -546,6 +550,12 @@ class Module {
 										// String is a single line; format as single line
 										$this->processedData[$id][$name] = TextRenderer::SmartizeText($data[$name]);
 									}
+								}
+								break;
+							case 'int':
+								if ($relatedArray) {
+									// If there's a related array, add the string representation to data
+									$this->processedData[$id][$name .'_string'] = $relatedArray[$data[$name]];
 								}
 								break;
 							case 'datetime':
@@ -734,10 +744,8 @@ class Module {
 
 			// Look for keyQuery.ini
 			if ($relatedQueryParams = Module::ParseConfigFile($relatedModule, 'config/keyQuery.ini', true)) {
-
 				// Fetch array using specified query
 				$relatedQuery = new Query($relatedQueryParams);
-				
 			} else {
 				if (!$keyField = $relatedModuleConfig['keyField']) {
 					// If no key field was specified in config file, use first field
