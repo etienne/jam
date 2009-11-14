@@ -485,6 +485,7 @@ div.actions {
 form > div {
 	padding: 5px 0;
 	border-bottom: 1px solid #e9eae1;
+	clear: both;
 }
 
 form div.missing {

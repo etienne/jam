@@ -10,6 +10,8 @@ class TextRenderer {
 	}
 
 	function FormatText ($string) {
+		global $_JAM;
+		
 		// Look for Markdown preference
 		if ($_JAM->projectConfig['useMarkdown']) {
 			require_once('engine/libraries/markdown.php');
